@@ -5,13 +5,13 @@ using System.Text;
 using TestCommon;
 
 Console.Write("Addr: ");
-var addr = Console.ReadLine()!;
+var addr = Console.ReadLine()!;                         // 用户输入地址
 
 TcpClient client = new TcpClient();
-client.Connect(IPEndPoint.Parse(addr));
+client.Connect(IPEndPoint.Parse(addr));                 // 连接到服务器
 
-var stream = client.GetStream();
-RpcClient<Commands> rpc = new RpcClient<Commands>(stream);
+RpcClient<Commands> rpc =
+    new RpcClient<Commands>(client.GetStream());        // 创建 RPC 客户端实例
 
 while (true)
 {
@@ -19,5 +19,5 @@ while (true)
     if (input == null)
         break;
 
-    rpc.Remote.WriteLine(input);
+    rpc.Remote.WriteLine(input);                        // 调用服务端 WriteLine 方法
 }
