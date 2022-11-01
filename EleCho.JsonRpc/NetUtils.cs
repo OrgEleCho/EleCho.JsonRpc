@@ -33,9 +33,6 @@ namespace EleCho.JsonRpc
 
         public static void WriteJsonMessage<T>(this Stream stream, T obj)
         {
-            //JsonSerializer.Serialize<T>(stream, obj);
-            //return;
-
             MemoryStream ms = new MemoryStream();
             JsonSerializer.Serialize(ms, obj);
 
@@ -43,32 +40,10 @@ namespace EleCho.JsonRpc
             stream.WriteMessage(body, 0, (int)ms.Length);
         }
 
-        public static void WriteJsonMessage(this Stream stream, object obj, Type type)
-        {
-            //JsonSerializer.Serialize(stream, obj, type);
-            //return;
-
-            MemoryStream ms = new MemoryStream();
-            JsonSerializer.Serialize(ms, obj, type);
-
-            byte[] body = ms.GetBuffer();
-            stream.WriteMessage(body, 0, (int)ms.Length);
-        }
-
         public static T? ReadJsonMessage<T>(this Stream stream)
         {
-            //return JsonSerializer.Deserialize<T>(JsonDocument.Parse(stream));
-
             byte[] body = stream.ReadMessage();
             return JsonSerializer.Deserialize<T>(body);
-        }
-
-        public static object? ReadJsonMessage(this Stream stream, Type type)
-        {
-            //return JsonSerializer.Deserialize(JsonDocument.Parse(stream), type);
-
-            byte[] body = stream.ReadMessage();
-            return JsonSerializer.Deserialize(body, type);
         }
     }
 }
