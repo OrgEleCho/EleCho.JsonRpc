@@ -1,10 +1,10 @@
-# EleCho.JsonRpc
+# EleCho.JsonRpc [![](https://img.shields.io/badge/-中文-green)](README.md) [![](https://img.shields.io/badge/-English-green)](README.en.md)
 
 基于 JSON 的简单 RPC 库.
 
 > 通过阅读此项目的代码, 你可以学到: 动态代理. 项目主要逻辑代码不超过 250 行.
 
-## 传输格式
+## 传输
 
 ```txt
 --> 包头(四字节整数) + {"Method":"方法名","Arg":["参数"]}
