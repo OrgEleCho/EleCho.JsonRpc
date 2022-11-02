@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Text;
+using System.Text.Json;
 
 namespace EleCho.JsonRpc
 {
@@ -32,7 +33,10 @@ namespace EleCho.JsonRpc
                     if (resp.Err != null)
                         throw new TargetInvocationException(resp.Err, null);
 
-                    return resp.Ret;
+                    object? ret =
+                        resp.Ret is JsonElement jret ? jret.Deserialize(targetMethod.ReturnType) : null;
+
+                    return ret;
                 }
             }
         }
