@@ -67,7 +67,7 @@ while (true)
 }
 ```
 
-客户端连接并调用远程函数:
+客户端连接并调用远程函数(The client connects and calls the remote function):
 
 ```csharp
 Console.Write("Addr: ");
