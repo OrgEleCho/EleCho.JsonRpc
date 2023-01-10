@@ -1,23 +1,23 @@
-# EleCho.JsonRpc [![](https://img.shields.io/badge/-ÖĞÎÄ-green)](README.md) [![](https://img.shields.io/badge/-English-green)](README.en.md)
+# EleCho.JsonRpc [![](https://img.shields.io/badge/-ä¸­æ–‡-green)](README.md) [![](https://img.shields.io/badge/-English-green)](README.en.md)
 
-»ùÓÚ JSON µÄ¼òµ¥ RPC ¿â.
+åŸºäº JSON çš„ç®€å• RPC åº“.
 
-> Í¨¹ıÔÄ¶Á´ËÏîÄ¿µÄ´úÂë, Äã¿ÉÒÔÑ§µ½: ¶¯Ì¬´úÀí. ÏîÄ¿Ö÷ÒªÂß¼­´úÂë²»³¬¹ı 300 ĞĞ.
+> é€šè¿‡é˜…è¯»æ­¤é¡¹ç›®çš„ä»£ç , ä½ å¯ä»¥å­¦åˆ°: åŠ¨æ€ä»£ç†. é¡¹ç›®ä¸»è¦é€»è¾‘ä»£ç ä¸è¶…è¿‡ 300 è¡Œ.
 
-## ´«Êä
+## ä¼ è¾“
 
 ```txt
---> °üÍ·(ËÄ×Ö½ÚÕûÊı) + {"Method":"·½·¨Ãû","Arg":["²ÎÊı"]}
-<-- °üÍ·(ËÄ×Ö½ÚÕûÊı) + {"Ret":"·µ»ØÖµ","RefRet":["ÒıÓÃ·µ»ØÖµ"],"Err":"´íÎóĞÅÏ¢"}
+--> åŒ…å¤´(å››å­—èŠ‚æ•´æ•°) + {"Method":"æ–¹æ³•å","Arg":["å‚æ•°"]}
+<-- åŒ…å¤´(å››å­—èŠ‚æ•´æ•°) + {"Ret":"è¿”å›å€¼","RefRet":["å¼•ç”¨è¿”å›å€¼"],"Err":"é”™è¯¯ä¿¡æ¯"}
 ```
 
-> ×¢: µ±·½·¨ÕıÈ·ÏìÓ¦·µ»ØÖµÊ±, Err ×Ö¶ÎÓ¦¸ÃÎª null
+> æ³¨: å½“æ–¹æ³•æ­£ç¡®å“åº”è¿”å›å€¼æ—¶, Err å­—æ®µåº”è¯¥ä¸º null
 
-## Ê¹ÓÃ
+## ä½¿ç”¨
 
-¸Ã¿â¿ÉÒÔÔÚ `System.IO.Stream` ÉÏÊ¹ÓÃ
+è¯¥åº“å¯ä»¥åœ¨ `System.IO.Stream` ä¸Šä½¿ç”¨
 
-¶¨Òå¹«¹²µÄ½Ó¿Ú:
+å®šä¹‰å…¬å…±çš„æ¥å£:
 
 ```csharp
 public interface Commands
@@ -28,7 +28,7 @@ public interface Commands
 }
 ```
 
-·şÎñ¶Ë¶Ô½Ó¿ÚµÄÊµÏÖ:
+æœåŠ¡ç«¯å¯¹æ¥å£çš„å®ç°:
 
 ```csharp
 internal class CommandsImpl : Commands
@@ -39,43 +39,43 @@ internal class CommandsImpl : Commands
 }
 ```
 
-·şÎñ¶Ë¼àÌı TCP:
+æœåŠ¡ç«¯ç›‘å¬ TCP:
 
 ```csharp
 int port = 11451;
 
-TcpListener listener = new TcpListener(new IPEndPoint(IPAddress.Any, port));      // ¼àÌıÖ¸¶¨¶Ë¿Ú
+TcpListener listener = new TcpListener(new IPEndPoint(IPAddress.Any, port));      // ç›‘å¬æŒ‡å®šç«¯å£
 listener.Start();
 
-CommandsImpl serverCommands = new CommandsImpl();                                 // ´´½¨¹«ÓÃµÄÖ¸Áîµ÷ÓÃÊµÀı
-List<RpcServer<Commands>> rpcs = new List<RpcServer<Commands>>();                 // ±£´æËùÓĞ¿Í»§¶Ë RPC ÒıÓÃ
+CommandsImpl serverCommands = new CommandsImpl();                                 // åˆ›å»ºå…¬ç”¨çš„æŒ‡ä»¤è°ƒç”¨å®ä¾‹
+List<RpcServer<Commands>> rpcs = new List<RpcServer<Commands>>();                 // ä¿å­˜æ‰€æœ‰å®¢æˆ·ç«¯ RPC å¼•ç”¨
 
 Console.WriteLine($"Listening {port}");
 
 while (true)
 {
-    TcpClient client = await listener.AcceptTcpClientAsync();                     // ½ÓÊÜÒ»¸ö¿Í»§¶Ë
-    rpcs.Add(new RpcServer<Commands>(client.GetStream(), serverCommands));        // ´´½¨²¢±£´æ RPC ÊµÀı
+    TcpClient client = await listener.AcceptTcpClientAsync();                     // æ¥å—ä¸€ä¸ªå®¢æˆ·ç«¯
+    rpcs.Add(new RpcServer<Commands>(client.GetStream(), serverCommands));        // åˆ›å»ºå¹¶ä¿å­˜ RPC å®ä¾‹
 }
 ```
 
-¿Í»§¶ËÁ¬½Ó²¢µ÷ÓÃÔ¶³Ìº¯Êı:
+å®¢æˆ·ç«¯è¿æ¥å¹¶è°ƒç”¨è¿œç¨‹å‡½æ•°:
 
 ```csharp
 Console.Write("Addr: ");
-var addr = Console.ReadLine()!;                         // ÓÃ»§ÊäÈëµØÖ·
+var addr = Console.ReadLine()!;                         // ç”¨æˆ·è¾“å…¥åœ°å€
 
 TcpClient client = new TcpClient();
-client.Connect(IPEndPoint.Parse(addr));                 // Á¬½Óµ½·şÎñÆ÷
+client.Connect(IPEndPoint.Parse(addr));                 // è¿æ¥åˆ°æœåŠ¡å™¨
 
 RpcClient<Commands> rpc =
-    new RpcClient<Commands>(client.GetStream());        // ´´½¨ RPC ¿Í»§¶ËÊµÀı
+    new RpcClient<Commands>(client.GetStream());        // åˆ›å»º RPC å®¢æˆ·ç«¯å®ä¾‹
 
 int num = 10;
 rpc.Remote.Add114514(ref num);
 
 if (num == 114524)
-    Console.WriteLine("´ø ref ²ÎÊıµÄ RPC µ÷ÓÃ³É¹¦");
+    Console.WriteLine("å¸¦ ref å‚æ•°çš„ RPC è°ƒç”¨æˆåŠŸ");
 
 while (true)
 {
@@ -83,17 +83,17 @@ while (true)
     if (input == null)
         break;
 
-    rpc.Remote.WriteLine(input);                        // µ÷ÓÃ·şÎñ¶Ë WriteLine ·½·¨
+    rpc.Remote.WriteLine(input);                        // è°ƒç”¨æœåŠ¡ç«¯ WriteLine æ–¹æ³•
 }
 ```
 
-> ¿Í»§¶Ë¿ØÖÆÌ¨: \
+> å®¢æˆ·ç«¯æ§åˆ¶å°: \
 > Addr: 127.0.0.1:11451 \
-> ´ø ref ²ÎÊıµÄ RPC µ÷ÓÃ³É¹¦\
+> å¸¦ ref å‚æ•°çš„ RPC è°ƒç”¨æˆåŠŸ\
 > hello \
 > this message is from client
 
-> ·şÎñ¶Ë¿ØÖÆÌ¨: \
+> æœåŠ¡ç«¯æ§åˆ¶å°: \
 > Listening 11451 \
 > Server print: hello \
 > Server print: this message is from client

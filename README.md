@@ -1,31 +1,31 @@
-# EleCho.JsonRpc [![](https://img.shields.io/badge/-ÖĞÎÄ-green)](README.md) [![](https://img.shields.io/badge/-English-green)](README.en.md)
+# EleCho.JsonRpc [![](https://img.shields.io/badge/-ä¸­æ–‡-green)](README.md) [![](https://img.shields.io/badge/-English-green)](README.en.md)
 
-»ùÓÚ JSON µÄ¼òµ¥ RPC ¿â. \
+åŸºäº JSON çš„ç®€å• RPC åº“. \
 Simple JSON based RPC library.
 
-> Í¨¹ıÔÄ¶Á´ËÏîÄ¿µÄ´úÂë, Äã¿ÉÒÔÑ§µ½: ¶¯Ì¬´úÀí. ÏîÄ¿Ö÷ÒªÂß¼­´úÂë²»³¬¹ı 300 ĞĞ. \
+> é€šè¿‡é˜…è¯»æ­¤é¡¹ç›®çš„ä»£ç , ä½ å¯ä»¥å­¦åˆ°: åŠ¨æ€ä»£ç†. é¡¹ç›®ä¸»è¦é€»è¾‘ä»£ç ä¸è¶…è¿‡ 300 è¡Œ. \
 > By reading the code of this project, you can learn: Dynamic proxy. The main logic code of the project does not exceed 300 lines.
 
-## ´«Êä / Transmission
+## ä¼ è¾“ / Transmission
 
 ```txt
---> °üÍ·(ËÄ×Ö½ÚÕûÊı) + {"Method":"·½·¨Ãû","Arg":["²ÎÊı"]}
-<-- °üÍ·(ËÄ×Ö½ÚÕûÊı) + {"Ret":"·µ»ØÖµ","RefRet":["ÒıÓÃ·µ»ØÖµ"],"Err":"´íÎóĞÅÏ¢"}
+--> åŒ…å¤´(å››å­—èŠ‚æ•´æ•°) + {"Method":"æ–¹æ³•å","Arg":["å‚æ•°"]}
+<-- åŒ…å¤´(å››å­—èŠ‚æ•´æ•°) + {"Ret":"è¿”å›å€¼","RefRet":["å¼•ç”¨è¿”å›å€¼"],"Err":"é”™è¯¯ä¿¡æ¯"}
 ```
 ```txt
 --> header(four-byte integer) + {"Method":"method name","Arg":["arguments"]}
 <-- header(four-byte integer) + {"Ret":"return value","RefRet":["reference returns"],"Err":"error message"}
 ```
 
-> ×¢: µ±·½·¨ÕıÈ·ÏìÓ¦·µ»ØÖµÊ±, Err ×Ö¶ÎÓ¦¸ÃÎª null \
+> æ³¨: å½“æ–¹æ³•æ­£ç¡®å“åº”è¿”å›å€¼æ—¶, Err å­—æ®µåº”è¯¥ä¸º null \
 > Note: The Err field should be null when the method responds correctly with the return value
 
-## Ê¹ÓÃ / Usage
+## ä½¿ç”¨ / Usage
 
-¸Ã¿â¿ÉÒÔÔÚ `System.IO.Stream` ÉÏÊ¹ÓÃ \
+è¯¥åº“å¯ä»¥åœ¨ `System.IO.Stream` ä¸Šä½¿ç”¨ \
 This library can be used on `System.IO.Stream`
 
-¶¨Òå¹«¹²µÄ½Ó¿Ú(Define the public interface):
+å®šä¹‰å…¬å…±çš„æ¥å£(Define the public interface):
 
 ```csharp
 public interface Commands
@@ -36,7 +36,7 @@ public interface Commands
 }
 ```
 
-·şÎñ¶Ë¶Ô½Ó¿ÚµÄÊµÏÖ(Server implementation of the interface):
+æœåŠ¡ç«¯å¯¹æ¥å£çš„å®ç°(Server implementation of the interface):
 
 ```csharp
 internal class CommandsImpl : Commands
@@ -47,43 +47,43 @@ internal class CommandsImpl : Commands
 }
 ```
 
-·şÎñ¶Ë¼àÌı TCP (Server listening on TCP):
+æœåŠ¡ç«¯ç›‘å¬ TCP (Server listening on TCP):
 
 ```csharp
 int port = 11451;
 
-TcpListener listener = new TcpListener(new IPEndPoint(IPAddress.Any, port));      // ¼àÌıÖ¸¶¨¶Ë¿Ú / listen on specified port
+TcpListener listener = new TcpListener(new IPEndPoint(IPAddress.Any, port));      // ç›‘å¬æŒ‡å®šç«¯å£ / listen on specified port
 listener.Start();
 
-CommandsImpl serverCommands = new CommandsImpl();                                 // ´´½¨¹«ÓÃµÄÖ¸Áîµ÷ÓÃÊµÀı / Create a common command call instance
-List<RpcServer<Commands>> rpcs = new List<RpcServer<Commands>>();                 // ±£´æËùÓĞ¿Í»§¶Ë RPC ÒıÓÃ / Save all client RPC references
+CommandsImpl serverCommands = new CommandsImpl();                                 // åˆ›å»ºå…¬ç”¨çš„æŒ‡ä»¤è°ƒç”¨å®ä¾‹ / Create a common command call instance
+List<RpcServer<Commands>> rpcs = new List<RpcServer<Commands>>();                 // ä¿å­˜æ‰€æœ‰å®¢æˆ·ç«¯ RPC å¼•ç”¨ / Save all client RPC references
 
 Console.WriteLine($"Listening {port}");
 
 while (true)
 {
-    TcpClient client = await listener.AcceptTcpClientAsync();                     // ½ÓÊÜÒ»¸ö¿Í»§¶Ë / Accept a client
-    rpcs.Add(new RpcServer<Commands>(client.GetStream(), serverCommands));        // ´´½¨²¢±£´æ RPC ÊµÀı / Create and save an RPC instance
+    TcpClient client = await listener.AcceptTcpClientAsync();                     // æ¥å—ä¸€ä¸ªå®¢æˆ·ç«¯ / Accept a client
+    rpcs.Add(new RpcServer<Commands>(client.GetStream(), serverCommands));        // åˆ›å»ºå¹¶ä¿å­˜ RPC å®ä¾‹ / Create and save an RPC instance
 }
 ```
 
-¿Í»§¶ËÁ¬½Ó²¢µ÷ÓÃÔ¶³Ìº¯Êı(The client connects and calls the remote function):
+å®¢æˆ·ç«¯è¿æ¥å¹¶è°ƒç”¨è¿œç¨‹å‡½æ•°(The client connects and calls the remote function):
 
 ```csharp
 Console.Write("Addr: ");
-var addr = Console.ReadLine()!;                         // ÓÃ»§ÊäÈëµØÖ· / User enters the address
+var addr = Console.ReadLine()!;                         // ç”¨æˆ·è¾“å…¥åœ°å€ / User enters the address
 
 TcpClient client = new TcpClient();
-client.Connect(IPEndPoint.Parse(addr));                 // Á¬½Óµ½·şÎñÆ÷ / Connect to server
+client.Connect(IPEndPoint.Parse(addr));                 // è¿æ¥åˆ°æœåŠ¡å™¨ / Connect to server
 
 RpcClient<Commands> rpc =
-    new RpcClient<Commands>(client.GetStream());        // ´´½¨ RPC ¿Í»§¶ËÊµÀı / Create an RPC client instance
+    new RpcClient<Commands>(client.GetStream());        // åˆ›å»º RPC å®¢æˆ·ç«¯å®ä¾‹ / Create an RPC client instance
 
 int num = 10;
 rpc.Remote.Add114514(ref num);
 
 if (num == 114524)
-    Console.WriteLine("´ø ref ²ÎÊıµÄ RPC µ÷ÓÃ³É¹¦");
+    Console.WriteLine("å¸¦ ref å‚æ•°çš„ RPC è°ƒç”¨æˆåŠŸ");
 
 while (true)
 {
@@ -91,17 +91,17 @@ while (true)
     if (input == null)
         break;
 
-    rpc.Remote.WriteLine(input);                        // µ÷ÓÃ·şÎñ¶Ë WriteLine ·½·¨ / Call the server WriteLine method
+    rpc.Remote.WriteLine(input);                        // è°ƒç”¨æœåŠ¡ç«¯ WriteLine æ–¹æ³• / Call the server WriteLine method
 }
 ```
 
-> ¿Í»§¶Ë¿ØÖÆÌ¨(Client console): \
+> å®¢æˆ·ç«¯æ§åˆ¶å°(Client console): \
 > Addr: 127.0.0.1:11451 \
-> ´ø ref ²ÎÊıµÄ RPC µ÷ÓÃ³É¹¦\
+> å¸¦ ref å‚æ•°çš„ RPC è°ƒç”¨æˆåŠŸ\
 > hello \
 > this message is from client
 
-> ·şÎñ¶Ë¿ØÖÆÌ¨: \
+> æœåŠ¡ç«¯æ§åˆ¶å°: \
 > Listening 11451 \
 > Server print: hello \
 > Server print: this message is from client
