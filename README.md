@@ -24,6 +24,7 @@ public interface Commands
 {
     public void WriteLine(string message);
     public int Add(int a, int b);
+    public int Add114514(ref int num);
 }
 ```
 
@@ -33,6 +34,7 @@ public interface Commands
 internal class CommandsImpl : Commands
 {
     public int Add(int a, int b) => a + b;
+    public int Add114514(ref int num) => num += 114514;
     public void WriteLine(string message) => Console.WriteLine("Server print: " + message);
 }
 ```
@@ -49,6 +51,12 @@ CommandsImpl serverCommands = new CommandsImpl();                               
 List<RpcServer<Commands>> rpcs = new List<RpcServer<Commands>>();                 // 保存所有客户端 RPC 引用
 
 Console.WriteLine($"Listening {port}");
+
+int num = 10;
+rpc.Remote.Add114514(ref num);
+
+if (num == 114524)
+    Console.WriteLine("带 ref 参数的 RPC 调用成功");
 
 while (true)
 {
@@ -81,6 +89,7 @@ while (true)
 
 > 客户端控制台: \
 > Addr: 127.0.0.1:11451 \
+> 带 ref 参数的 RPC 调用成功\
 > hello \
 > this message is from client
 

@@ -14,13 +14,15 @@
 
     public class RpcResponse
     {
-        public RpcResponse(object? ret, string? err)
+        public RpcResponse(object? ret, object?[]? refRet, string? err)
         {
             Ret = ret;
+            RefRet = refRet;
             Err = err;
         }
 
         public object? Ret { get; }
+        public object?[]? RefRet { get; }
         public string? Err { get; }
     }
 }

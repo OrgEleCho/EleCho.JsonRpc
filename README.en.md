@@ -24,6 +24,7 @@ public interface Commands
 {
     public void WriteLine(string message);
     public int Add(int a, int b);
+    public int Add114514(ref int num);
 }
 ```
 
@@ -33,6 +34,7 @@ Server implementation of the interface:
 internal class CommandsImpl : Commands
 {
     public int Add(int a, int b) => a + b;
+    public int Add114514(ref int num) => num += 114514;
     public void WriteLine(string message) => Console.WriteLine("Server print: " + message);
 }
 ```
@@ -51,6 +53,12 @@ List<RpcServer<Commands>> rpcs = new List<RpcServer<Commands>>();               
 Console.WriteLine($"Listening {port}");
 
 while (true)
+
+int num = 10;
+rpc.Remote.Add114514(ref num);
+
+if (num == 114524)
+    Console.WriteLine("RPC call with 'ref' succeed");
 {
     TcpClient client = await listener.AcceptTcpClientAsync();                     // accept a client
     rpcs.Add(new RpcServer<Commands>(client.GetStream(), serverCommands));        // Create and save an RPC instance
@@ -81,6 +89,7 @@ while (true)
 
 > Client console: \
 > Addr: 127.0.0.1:11451 \
+> RPC call with 'ref' succeed\
 > hello \
 > this message is from client
 
