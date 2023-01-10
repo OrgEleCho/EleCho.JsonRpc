@@ -2,13 +2,13 @@
 
 Simple JSON based RPC library.
 
-> By reading the code of this project, you can learn: Dynamic proxy. The main logic code of the project does not exceed 250 lines.
+> By reading the code of this project, you can learn: Dynamic proxy. The main logic code of the project does not exceed 300 lines.
 
 ## Transmission
 
 ```txt
 --> header(four-byte integer) + {"Method":"method name","Arg":["arguments"]}
-<-- header(four-byte integer) + {"Ret":"return value","Err":"error message"}
+<-- header(four-byte integer) + {"Ret":"return value","RefRet":["reference returns"],"Err":"error message"}
 ```
 
 > Note: The Err field should be null when the method responds correctly with the return value
@@ -53,14 +53,8 @@ List<RpcServer<Commands>> rpcs = new List<RpcServer<Commands>>();               
 Console.WriteLine($"Listening {port}");
 
 while (true)
-
-int num = 10;
-rpc.Remote.Add114514(ref num);
-
-if (num == 114524)
-    Console.WriteLine("RPC call with 'ref' succeed");
 {
-    TcpClient client = await listener.AcceptTcpClientAsync();                     // accept a client
+    TcpClient client = await listener.AcceptTcpClientAsync();                     // Accept a client
     rpcs.Add(new RpcServer<Commands>(client.GetStream(), serverCommands));        // Create and save an RPC instance
 }
 ```
@@ -69,13 +63,19 @@ The client connects and calls the remote function:
 
 ```csharp
 Console.Write("Addr: ");
-var addr = Console.ReadLine()!;                         // User enters address
+var addr = Console.ReadLine()!;                         // User enters the address
 
 TcpClient client = new TcpClient();
-client.Connect(IPEndPoint.Parse(addr));                 // connect to server
+client.Connect(IPEndPoint.Parse(addr));                 // Connect to server
 
 RpcClient<Commands> rpc =
     new RpcClient<Commands>(client.GetStream());        // Create an RPC client instance
+
+int num = 10;
+rpc.Remote.Add114514(ref num);
+
+if (num == 114524)
+    Console.WriteLine("RPC call with 'ref' succeed");
 
 while (true)
 {
