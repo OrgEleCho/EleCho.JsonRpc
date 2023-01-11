@@ -32,4 +32,3 @@ while (true)
 
     rpc.Remote.WriteLine(input);                        // 调用服务端 WriteLine 方法
 }
-default(Memory<byte>).Span
