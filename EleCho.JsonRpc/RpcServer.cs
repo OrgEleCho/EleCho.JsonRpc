@@ -1,13 +1,14 @@
-﻿using System.Reflection;
-using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace EleCho.JsonRpc
 {
-    public class RpcServer<T> : IDisposable
+    public class RpcServer<T> : IDisposable where T : class
     {
-        private static readonly Type t = typeof(T);
-
         private bool loop = true;
         private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsCache =
             new Dictionary<string, (MethodInfo, ParameterInfo[])>();
@@ -16,7 +17,18 @@ namespace EleCho.JsonRpc
         public Stream Recv { get; }
         public T Instance { get; }
 
+        public void Dispose() => loop = false;
 
+        public RpcServer(Stream client, T instance) : this(client, client, instance) { }
+        public RpcServer(Stream send, Stream recv, T instance)
+        {
+            Send = send;
+            Recv = recv;
+            Instance = instance;
+
+            Task.Run(MainLoop);
+        }
+        
         private void MainLoop()
         {
             while (loop)
@@ -35,7 +47,7 @@ namespace EleCho.JsonRpc
                     try
                     {
                         RpcUtils.GetMethodNameAndParameterTypesFromSignature(req.Method, out string methodName, out Type[] parameterTypes);
-                        MethodInfo? foundMethod = t.GetMethod(methodName, parameterTypes);
+                        MethodInfo? foundMethod = typeof(T).GetMethod(methodName, parameterTypes);
 
                         if (foundMethod == null)
                         {
@@ -74,10 +86,10 @@ namespace EleCho.JsonRpc
                                     paramType = paramType.GetElementType()!;
                                     refArgCount++;
                                 }
-                                
+
                                 convertedArg[i] = ele.Deserialize(paramType);
                             }
-                        
+
                         parameters = convertedArg;
                     }
                     catch
@@ -112,18 +124,6 @@ namespace EleCho.JsonRpc
                     Send.Flush();
                 }
             }
-        }
-
-        public void Dispose() => loop = false;
-
-        public RpcServer(Stream client, T instance) : this(client, client, instance) { }
-        public RpcServer(Stream send, Stream recv, T instance)
-        {
-            Send = send;
-            Recv = recv;
-            Instance = instance;
-
-            Task.Run(MainLoop);
         }
     }
 }

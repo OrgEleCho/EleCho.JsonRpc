@@ -22,7 +22,7 @@ rpc.Remote.Add114514(ref num);
 if (num == 114524)
     Console.WriteLine("带 ref 参数的 RPC 调用成功");
 
-Console.WriteLine("当前时间: " + rpc.Remote.DateTimeNow);
+Console.WriteLine("当前服务器时间: " + rpc.Remote.DateTimeNow);
 
 while (true)
 {
@@ -32,3 +32,4 @@ while (true)
 
     rpc.Remote.WriteLine(input);                        // 调用服务端 WriteLine 方法
 }
+default(Memory<byte>).Span
