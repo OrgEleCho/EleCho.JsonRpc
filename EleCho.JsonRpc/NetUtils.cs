@@ -3,13 +3,22 @@ using System.IO;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace EleCho.JsonRpc
 {
     static class NetUtils
     {
+        private static readonly JsonSerializerOptions RpcJsonSerializerOptions =
+            new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            };
+
 #if NET6_0_OR_GREATER
         public static void ReadBlock(Stream stream, Span<byte> block)
         {
@@ -34,10 +43,11 @@ namespace EleCho.JsonRpc
         public static unsafe void WriteMessage(this Stream stream, byte[] buffer, int offset, int count)
         {
 #if NET6_0_OR_GREATER
-            Span<byte> head = new Span<byte>((byte*)&count, sizeof(int));
+            int countCopy = count;
+            Span<byte> head = new Span<byte>((byte*)&countCopy, sizeof(int));
             if (BitConverter.IsLittleEndian)
                 head.Reverse();                                             // 这样?
-            
+
             stream.Write(head);
 #elif NET462_OR_GREATER
             byte[] head = BitConverter.GetBytes(count);
@@ -56,7 +66,7 @@ namespace EleCho.JsonRpc
 #if NET6_0_OR_GREATER
             Span<byte> head = stackalloc byte[sizeof(int)];
             ReadBlock(stream, head);
-            
+
             int bodyLen = Unsafe.As<byte, int>(ref MemoryMarshal.GetReference(head));
 #elif NET462_OR_GREATER
             byte[] head = new byte[sizeof(int)];
@@ -78,7 +88,7 @@ namespace EleCho.JsonRpc
         public static void WriteJsonMessage<T>(this Stream stream, T obj)
         {
             MemoryStream ms = new MemoryStream();
-            JsonSerializer.Serialize(ms, obj);
+            JsonSerializer.Serialize(ms, obj, RpcJsonSerializerOptions);
 
             byte[] body = ms.GetBuffer();
             stream.WriteMessage(body, 0, (int)ms.Length);
@@ -87,7 +97,7 @@ namespace EleCho.JsonRpc
         public static T? ReadJsonMessage<T>(this Stream stream)
         {
             byte[] body = stream.ReadMessage();
-            return JsonSerializer.Deserialize<T>(body);
+            return JsonSerializer.Deserialize<T>(body, RpcJsonSerializerOptions);
         }
     }
 }
