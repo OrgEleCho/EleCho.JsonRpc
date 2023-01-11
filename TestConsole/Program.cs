@@ -1,7 +1,7 @@
-﻿using EleCho.JsonRpc;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
+using EleCho.JsonRpc;
 using TestCommon;
 
 Console.Write("Addr: ");
@@ -11,7 +11,7 @@ if (string.IsNullOrWhiteSpace(addr))
     addr = "127.0.0.1:11451";
 
 TcpClient client = new TcpClient();
-client.Connect(IPEndPoint.Parse(addr));                 // 连接到服务器
+client.Connect(ParseIPEndPoint(addr));                 // 连接到服务器
 
 RpcClient<Commands> rpc =
     new RpcClient<Commands>(client.GetStream());        // 创建 RPC 客户端实例
@@ -31,4 +31,13 @@ while (true)
         break;
 
     rpc.Remote.WriteLine(input);                        // 调用服务端 WriteLine 方法
+}
+
+IPEndPoint ParseIPEndPoint(string addr)
+{
+    var parts = addr.Split(':');
+    if (parts.Length != 2)
+        throw new ArgumentException("Invalid address format");
+
+    return new IPEndPoint(IPAddress.Parse(parts[0]), int.Parse(parts[1]));
 }

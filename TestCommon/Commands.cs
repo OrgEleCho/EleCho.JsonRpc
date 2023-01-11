@@ -1,4 +1,6 @@
-﻿namespace TestCommon
+﻿using System;
+
+namespace TestCommon
 {
     public interface Commands
     {
