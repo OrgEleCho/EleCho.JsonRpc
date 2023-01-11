@@ -3,8 +3,8 @@
 基于 JSON 的简单 RPC 库. \
 Simple JSON based RPC library.
 
-> 通过阅读此项目的代码, 你可以学到: 动态代理. 项目主要逻辑代码不超过 300 行. \
-> By reading the code of this project, you can learn: Dynamic proxy. The main logic code of the project does not exceed 300 lines.
+> 通过阅读此项目的代码, 你可以学到: 动态代理. 项目主要逻辑代码不超过 400 行. \
+> By reading the code of this project, you can learn: Dynamic proxy. The main logic code of the project does not exceed 400 lines.
 
 ## 传输 / Transmission
 
