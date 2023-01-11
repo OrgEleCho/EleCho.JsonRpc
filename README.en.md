@@ -2,7 +2,7 @@
 
 Simple JSON based RPC library.
 
-> By reading the code of this project, you can learn: Dynamic proxy. The main logic code of the project does not exceed 400 lines.
+> By reading the code of this project, you can learn: Dynamic proxy.
 
 ## Transmission
 
