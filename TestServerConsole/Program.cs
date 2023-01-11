@@ -21,6 +21,8 @@ while (true)
 
 internal class CommandsImpl : Commands
 {
+    public DateTime DateTimeNow => DateTime.Now;
+
     public int Add(int a, int b) => a + b;
     public int Add114514(ref int num) => num+=114514;
     public void WriteLine(string message) => Console.WriteLine("Server print: " + message);

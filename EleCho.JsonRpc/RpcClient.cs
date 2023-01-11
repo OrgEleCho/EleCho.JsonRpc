@@ -13,6 +13,9 @@ namespace EleCho.JsonRpc
 
             private readonly object calllock = new object();
 
+            public Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache =
+                new Dictionary<MethodInfo, (string, ParameterInfo[])>();
+
             protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
             {
                 if (Send == null || Recv == null)
@@ -23,7 +26,14 @@ namespace EleCho.JsonRpc
                     if (targetMethod == null)
                         return null;
 
-                    Send.WriteJsonMessage(new RpcRequest(targetMethod.Name, args));
+                    if (!methodsCache.TryGetValue(targetMethod, out (string Signature, ParameterInfo[] ParamInfos) methodStorage))
+                    {
+                        methodStorage = methodsCache[targetMethod] =
+                            (RpcUtils.GetMethodSignature(targetMethod, targetMethod.GetParameters()), targetMethod.GetParameters());
+                    }
+
+                    ParameterInfo[] paramInfos = methodStorage.ParamInfos;
+                    Send.WriteJsonMessage(new RpcRequest(methodStorage.Signature, args));
                     Send.Flush();
 
                     RpcResponse? resp = Recv.ReadJsonMessage<RpcResponse>();
@@ -37,9 +47,7 @@ namespace EleCho.JsonRpc
                         resp.Ret is JsonElement jret ? jret.Deserialize(targetMethod.ReturnType) : null;
 
                     if (resp.RefRet is object?[] refRet)
-                    {
-                        ParameterInfo[] paramInfos = targetMethod.GetParameters();
-                        
+                    {   
                         int i = 0;
                         foreach (ParameterInfo paramInfo in paramInfos)
                             if (paramInfo.ParameterType.IsByRef)
@@ -66,6 +74,11 @@ namespace EleCho.JsonRpc
         public RpcClient(Stream server) : this(server, server) { }
         public RpcClient(Stream send, Stream recv)
         {
+            Type type = typeof(T);
+            
+            if (!type.IsInterface)
+                throw new ArgumentException("Type must be an interface");
+
             try
             {
                 T rpc = DispatchProxy.Create<T, RpcInvoker>()!;

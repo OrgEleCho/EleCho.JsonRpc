@@ -5,7 +5,10 @@ using System.Text;
 using TestCommon;
 
 Console.Write("Addr: ");
-var addr = Console.ReadLine()!;                         // 用户输入地址
+var addr = Console.ReadLine();                          // 用户输入地址
+
+if (string.IsNullOrWhiteSpace(addr))
+    addr = "127.0.0.1:11451";
 
 TcpClient client = new TcpClient();
 client.Connect(IPEndPoint.Parse(addr));                 // 连接到服务器
@@ -18,6 +21,8 @@ rpc.Remote.Add114514(ref num);
 
 if (num == 114524)
     Console.WriteLine("带 ref 参数的 RPC 调用成功");
+
+Console.WriteLine("当前时间: " + rpc.Remote.DateTimeNow);
 
 while (true)
 {

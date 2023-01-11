@@ -9,7 +9,7 @@ namespace EleCho.JsonRpc
         private static readonly Type t = typeof(T);
 
         private bool loop = true;
-        private readonly Dictionary<string, (MethodInfo, ParameterInfo[])> methods =
+        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsCache =
             new Dictionary<string, (MethodInfo, ParameterInfo[])>();
 
         public Stream Send { get; }
@@ -30,19 +30,29 @@ namespace EleCho.JsonRpc
                     continue;
                 }
 
-                if (!methods.TryGetValue(req.Method, out (MethodInfo Method, ParameterInfo[] ParamInfos) methodStorage))
+                if (!methodsCache.TryGetValue(req.Method, out (MethodInfo Method, ParameterInfo[] ParamInfos) methodStorage))
                 {
-                    MethodInfo? foundMethod = t.GetMethod(req.Method);
+                    try
+                    {
+                        RpcUtils.GetMethodNameAndParameterTypesFromSignature(req.Method, out string methodName, out Type[] parameterTypes);
+                        MethodInfo? foundMethod = t.GetMethod(methodName, parameterTypes);
 
-                    if (foundMethod == null)
+                        if (foundMethod == null)
+                        {
+                            Send.WriteJsonMessage(new RpcResponse(null, null, "Method not found"));
+                            Send.Flush();
+                            continue;
+                        }
+
+                        methodStorage = methodsCache[req.Method] =
+                            (foundMethod, foundMethod.GetParameters());
+                    }
+                    catch
                     {
                         Send.WriteJsonMessage(new RpcResponse(null, null, "Method not found"));
                         Send.Flush();
                         continue;
                     }
-
-                    methodStorage = methods[req.Method] =
-                        (foundMethod, foundMethod.GetParameters());
                 }
 
                 int refArgCount = 0;
