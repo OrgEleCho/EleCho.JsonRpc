@@ -13,7 +13,7 @@
     <RepositoryUrl>https://github.com/EleChoNet/EleCho.JsonRpc</RepositoryUrl>
     <PackageTags>RPC, JSON</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.1.2</Version>
+    <Version>1.1.3</Version>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
