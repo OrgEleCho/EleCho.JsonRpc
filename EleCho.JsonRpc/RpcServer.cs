@@ -39,13 +39,20 @@ namespace EleCho.JsonRpc
         {
             while (loop)
             {
-                RpcPackage? pkg = recv.ReadJsonMessage<RpcPackage>();
-
-                if (pkg is RpcRequest req)
+                try
                 {
-                    RpcResponse resp = RpcUtils.ServerProcessRequest(req, methodsCache, Instance);
-                    send.WriteJsonMessage(resp);
-                    send.Flush();
+                    RpcPackage? pkg = recv.ReadJsonMessage<RpcPackage>();
+
+                    if (pkg is RpcRequest req)
+                    {
+                        RpcResponse resp = RpcUtils.ServerProcessRequest(req, methodsCache, Instance);
+                        send.WriteJsonMessage(resp);
+                        send.Flush();
+                    }
+                }
+                catch
+                {
+                    
                 }
             }
         }

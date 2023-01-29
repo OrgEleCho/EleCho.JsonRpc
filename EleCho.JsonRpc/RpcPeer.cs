@@ -46,20 +46,29 @@ namespace EleCho.JsonRpc
         {
             while (loop)
             {
-                RpcPackage? pkg = recv.ReadJsonMessage<RpcPackage>();
-
-                if (pkg is RpcRequest req)
+                try
                 {
-                    RpcResponse resp = RpcUtils.ServerProcessRequest(req, serverMethodsCache, implInstance);
-                    send.WriteJsonMessage(resp);
-                    send.Flush();
+                    RpcPackage? pkg = recv.ReadJsonMessage<RpcPackage>();
+
+                    if (pkg is RpcRequest req)
+                    {
+                        RpcResponse resp = RpcUtils.ServerProcessRequest(req, serverMethodsCache, implInstance);
+                        send.WriteJsonMessage(resp);
+                        send.Flush();
+                    }
+                    else if (pkg is RpcResponse resp)
+                    {
+                        rpcResponseQueue.Enqueue(resp);
+                    }
                 }
-                else if (pkg is RpcResponse resp)
-                    rpcResponseQueue.Enqueue(resp);
+                catch
+                {
+
+                }
             }
         }
 
-        RpcResponse? ReceiveResponse() =>
+        RpcResponse? ReceiveResponse() => 
             rpcResponseQueue.Dequeue();
 
         object? IRpcClient<TAction>.ProcessInvocation(MethodInfo? targetMethod, object?[]? args) =>
