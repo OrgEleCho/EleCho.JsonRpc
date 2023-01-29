@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
-namespace EleCho.JsonRpc
+namespace EleCho.JsonRpc.Utils
 {
     static class NetUtils
     {
@@ -17,6 +17,12 @@ namespace EleCho.JsonRpc
             {
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+
+                Converters =
+                {
+                    new RpcPackageConverter(),
+                    new JsonStringEnumConverter(),
+                }
             };
 
 #if NET6_0_OR_GREATER

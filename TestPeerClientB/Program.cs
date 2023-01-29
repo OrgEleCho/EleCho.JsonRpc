@@ -13,8 +13,8 @@ if (string.IsNullOrWhiteSpace(addr))
 TcpClient client = new TcpClient();
 client.Connect(ParseIPEndPoint(addr));                 // 连接到服务器
 
-RpcClient<ICommands> rpc =
-    new RpcClient<ICommands>(client.GetStream());        // 创建 RPC 客户端实例
+RpcPeer<ICommands, CommandsImpl> rpc =
+    new RpcPeer<ICommands, CommandsImpl>(client.GetStream(), new CommandsImpl());        // 创建 RPC 客户端实例
 
 int num = 10;
 rpc.Remote.Add114514(ref num);
@@ -40,4 +40,14 @@ IPEndPoint ParseIPEndPoint(string addr)
         throw new ArgumentException("Invalid address format");
 
     return new IPEndPoint(IPAddress.Parse(parts[0]), int.Parse(parts[1]));
+}
+
+
+internal class CommandsImpl : ICommands
+{
+    public DateTime DateTimeNow => DateTime.Now;
+
+    public int Add(int a, int b) => a + b;
+    public int Add114514(ref int num) => num += 114514;
+    public void WriteLine(string message) => Console.WriteLine("Server print: " + message);
 }

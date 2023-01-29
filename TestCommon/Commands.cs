@@ -2,7 +2,7 @@
 
 namespace TestCommon
 {
-    public interface Commands
+    public interface ICommands
     {
         public DateTime DateTimeNow { get; }
 
