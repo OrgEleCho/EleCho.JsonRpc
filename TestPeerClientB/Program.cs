@@ -22,7 +22,7 @@ rpc.Remote.Add114514(ref num);
 if (num == 114524)
     Console.WriteLine("带 ref 参数的 RPC 调用成功");
 
-Console.WriteLine("当前服务器时间: " + rpc.Remote.DateTimeNow);
+//Console.WriteLine("当前服务器时间: " + rpc.Remote.DateTimeNow);
 
 while (true)
 {
@@ -49,5 +49,10 @@ internal class CommandsImpl : ICommands
 
     public int Add(int a, int b) => a + b;
     public int Add114514(ref int num) => num += 114514;
-    public void WriteLine(string message) => Console.WriteLine("Server print: " + message);
+    public Task WriteLine(string message)
+    {
+        Console.WriteLine("Server print: " + message);
+
+        return Task.CompletedTask;
+    }
 }

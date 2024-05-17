@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
@@ -10,20 +11,39 @@ namespace EleCho.JsonRpc
 {
     public interface IRpcServer<T> where T : class
     {
-        internal RpcResponse ProcessInvocation(RpcRequest request);
+        internal RpcPackage? ProcessInvocation(RpcRequest request);
+        internal Task<RpcPackage?> ProcessInvocationAsync(RpcRequest request);
     }
 
     public class RpcServer<T> : IRpcServer<T>, IDisposable where T : class
     {
-        private bool loop = true;
-        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsCache =
-            new Dictionary<string, (MethodInfo, ParameterInfo[])>();
+        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache = new();
+        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache = new();
 
-        public readonly Stream send;
-        public readonly Stream recv;
+        public readonly Stream send, recv;
+        private readonly StreamWriter sendWriter;
+        private readonly StreamReader recvReader;
         public T Instance { get; }
 
-        public void Dispose() => loop = false;
+        public bool DisposeBaseStream { get; set; } = false;
+
+        bool disposed = false;
+        public void Dispose()
+        {
+            if (disposed)
+                return;
+
+            disposed = true;
+            if (DisposeBaseStream)
+            {
+                send.Dispose();
+                recv.Dispose();
+                sendWriter.Dispose();
+                recvReader.Dispose();
+            }
+
+            Disposed?.Invoke(this, EventArgs.Empty);
+        }
 
         public RpcServer(Stream client, T instance) : this(client, client, instance) { }
         public RpcServer(Stream send, Stream recv, T instance)
@@ -32,32 +52,84 @@ namespace EleCho.JsonRpc
             this.recv = recv;
             Instance = instance;
 
+            sendWriter = new StreamWriter(send) { AutoFlush = true };
+            recvReader = new StreamReader(recv);
+
             Task.Run(MainLoop);
         }
-        
+
         private void MainLoop()
         {
-            while (loop)
+            while (!disposed)
             {
                 try
                 {
-                    RpcPackage? pkg = recv.ReadJsonMessage<RpcPackage>();
+                    string? line = recvReader.ReadLine();
+
+#if DEBUG
+                    Debug.WriteLine($"Server received package: {line}");
+#endif
+
+                    if (line == null)
+                    {
+                        Dispose();
+                        break;
+                    }
+
+                    RpcPackage? pkg =
+                        JsonSerializer.Deserialize<RpcPackage>(line, JsonUtils.Options);
 
                     if (pkg is RpcRequest req)
                     {
-                        RpcResponse resp = RpcUtils.ServerProcessRequest(req, methodsCache, Instance);
-                        send.WriteJsonMessage(resp);
-                        send.Flush();
+                        RpcPackage? r_pkg = RpcUtils.ServerProcessRequest(req, methodsNameCache, methodsSignatureCache, Instance);
+
+                        if (r_pkg == null)
+                            continue;
+
+                        string r_json =
+                            JsonSerializer.Serialize(r_pkg, JsonUtils.Options);
+
+                        sendWriter.WriteLine(r_json);
                     }
                 }
-                catch
+                catch (JsonException ex)
                 {
-                    
+                    string r_json =
+                        JsonSerializer.Serialize(
+                            new RpcErrorResponse(
+                                new RpcError(RpcErrorCode.ParseError, ex.Message, ex.Data),
+                                SharedRandom.NextId()),
+                            JsonUtils.Options);
+
+                    sendWriter.WriteLine(r_json);
+                }
+                catch (IOException)
+                {
+                    Dispose();
                 }
             }
         }
 
-        RpcResponse IRpcServer<T>.ProcessInvocation(RpcRequest request) =>
-            RpcUtils.ServerProcessRequest(request, methodsCache, Instance);
+        RpcPackage? IRpcServer<T>.ProcessInvocation(RpcRequest request)
+        {
+            EnsureNotDisposed();
+            return
+                RpcUtils.ServerProcessRequest(request, methodsNameCache, methodsSignatureCache, Instance);
+        }
+
+        Task<RpcPackage?> IRpcServer<T>.ProcessInvocationAsync(RpcRequest request)
+        {
+            EnsureNotDisposed();
+            return
+                RpcUtils.ServerProcessRequestAsync(request, methodsNameCache, methodsSignatureCache, Instance);
+        }
+
+        void EnsureNotDisposed()
+        {
+            if (disposed)
+                throw new ObjectDisposedException($"The RpcServer was disposed.");
+        }
+
+        public event EventHandler? Disposed;
     }
 }

@@ -19,9 +19,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.zh.md = README.zh.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestPeerClientA", "TestPeerClientA\TestPeerClientA.csproj", "{BB04590E-D023-4C04-B0E0-902D5B664752}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestPeerClientA", "TestPeerClientA\TestPeerClientA.csproj", "{BB04590E-D023-4C04-B0E0-902D5B664752}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestPeerClientB", "TestPeerClientB\TestPeerClientB.csproj", "{25F870DF-65C7-40A8-881A-DC18CCFCC643}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestPeerClientB", "TestPeerClientB\TestPeerClientB.csproj", "{25F870DF-65C7-40A8-881A-DC18CCFCC643}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestServerConsoleWithOtherLib", "TestServerConsoleWithOtherLib\TestServerConsoleWithOtherLib.csproj", "{5FEFFE61-6CE6-4AC0-B3C5-7780982E99C7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestConsoleWithOtherLib", "TestConsoleWithOtherLib\TestConsoleWithOtherLib.csproj", "{858343EB-F7E8-44C8-8697-21DBB4136D9C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SslCommunicationTest", "SslCommunicationTest\SslCommunicationTest.csproj", "{F931B64A-064C-4F00-AAB3-9BECD5BD97F3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SslCommunicationTestServer", "SslCommunicationTestServer\SslCommunicationTestServer.csproj", "{F1D11104-6328-4FBC-A26E-B25DF3E5F7C7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SslCommunicationCommon", "SslCommunicationCommon\SslCommunicationCommon.csproj", "{36F42BBA-D126-44F0-9554-347F38E75AA6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +63,26 @@ Global
 		{25F870DF-65C7-40A8-881A-DC18CCFCC643}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{25F870DF-65C7-40A8-881A-DC18CCFCC643}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{25F870DF-65C7-40A8-881A-DC18CCFCC643}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FEFFE61-6CE6-4AC0-B3C5-7780982E99C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FEFFE61-6CE6-4AC0-B3C5-7780982E99C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FEFFE61-6CE6-4AC0-B3C5-7780982E99C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FEFFE61-6CE6-4AC0-B3C5-7780982E99C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{858343EB-F7E8-44C8-8697-21DBB4136D9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{858343EB-F7E8-44C8-8697-21DBB4136D9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{858343EB-F7E8-44C8-8697-21DBB4136D9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{858343EB-F7E8-44C8-8697-21DBB4136D9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F931B64A-064C-4F00-AAB3-9BECD5BD97F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F931B64A-064C-4F00-AAB3-9BECD5BD97F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F931B64A-064C-4F00-AAB3-9BECD5BD97F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F931B64A-064C-4F00-AAB3-9BECD5BD97F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1D11104-6328-4FBC-A26E-B25DF3E5F7C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1D11104-6328-4FBC-A26E-B25DF3E5F7C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1D11104-6328-4FBC-A26E-B25DF3E5F7C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1D11104-6328-4FBC-A26E-B25DF3E5F7C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36F42BBA-D126-44F0-9554-347F38E75AA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36F42BBA-D126-44F0-9554-347F38E75AA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36F42BBA-D126-44F0-9554-347F38E75AA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36F42BBA-D126-44F0-9554-347F38E75AA6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

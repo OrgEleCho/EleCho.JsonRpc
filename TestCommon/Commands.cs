@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace TestCommon
 {
@@ -6,7 +7,7 @@ namespace TestCommon
     {
         public DateTime DateTimeNow { get; }
 
-        public void WriteLine(string message);
+        public Task WriteLine(string message);
         public int Add(int a, int b);
         public int Add114514(ref int num);
     }

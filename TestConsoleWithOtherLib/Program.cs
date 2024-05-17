@@ -1,9 +1,8 @@
-﻿using System;
+﻿
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
-using EleCho.JsonRpc;
-using TestCommon;
+using StreamJsonRpc;
 
 Console.Write("Addr: ");
 var addr = Console.ReadLine();                          // 用户输入地址
@@ -13,17 +12,11 @@ if (string.IsNullOrWhiteSpace(addr))
 
 TcpClient client = new TcpClient();
 client.Connect(ParseIPEndPoint(addr));                 // 连接到服务器
+var stream = client.GetStream();
 
-RpcClient<ICommands> rpc =
-    new RpcClient<ICommands>(client.GetStream());        // 创建 RPC 客户端实例
+JsonRpc rpc = new JsonRpc(new StreamJsonRpc.NewLineDelimitedMessageHandler(stream, stream, new StreamJsonRpc.JsonMessageFormatter()));
+rpc.StartListening();
 
-//int num = 10;
-//rpc.Remote.Add114514(ref num);
-
-//if (num == 114524)
-//    Console.WriteLine("带 ref 参数的 RPC 调用成功");
-
-//Console.WriteLine("当前服务器时间: " + rpc.Remote.DateTimeNow);
 
 while (true)
 {
@@ -31,7 +24,7 @@ while (true)
     if (input == null)
         break;
 
-    await rpc.Remote.WriteLine(input);                        // 调用服务端 WriteLine 方法
+    await rpc.InvokeAsync("WriteLine", input);
 }
 
 IPEndPoint ParseIPEndPoint(string addr)
@@ -41,4 +34,10 @@ IPEndPoint ParseIPEndPoint(string addr)
         throw new ArgumentException("Invalid address format");
 
     return new IPEndPoint(IPAddress.Parse(parts[0]), int.Parse(parts[1]));
+}
+
+
+public interface ICommands
+{
+    public void WriteLine(string message);
 }

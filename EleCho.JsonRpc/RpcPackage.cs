@@ -1,82 +1,180 @@
 ﻿using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using EleCho.JsonRpc.Utils;
 
 namespace EleCho.JsonRpc
 {
-    public enum RpcPackageKind
-    {
-        Req = 1, Resp = 2
-    }
-    
     public abstract class RpcPackage
     {
-        public abstract RpcPackageKind Kind { get; }
+        [JsonInclude]
+        [JsonPropertyName("jsonrpc")]
+        public string JsonRpc => "2.0";
+    }
+
+    public record struct RpcPackageId
+    {
+        private RpcPackageId(object value)
+        {
+            Value = value;
+        }
+
+        public object Value { get; }
+
+        public static RpcPackageId? CreateOrNull(object? id)
+        {
+            if (id == null)
+                return null;
+
+            return Create(id);
+        }
+
+        public static RpcPackageId Create(object id)
+        {
+            if (id is string strId)
+                return Create(strId);
+            else if (id is int intId)
+                return Create(intId);
+            else
+                throw new ArgumentException("Invalid type of id", nameof(id));
+        }
+
+        public static RpcPackageId Create(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                throw new ArgumentException("Empty value", nameof(id));
+
+            return new RpcPackageId(id);
+        }
+
+        public static RpcPackageId Create(int id)
+        {
+            return new RpcPackageId(id);
+        }
     }
 
     public class RpcRequest : RpcPackage
     {
         [JsonConstructor]
-        public RpcRequest(string method, object?[]? arg)
+        public RpcRequest(string method, object?[]? args, string? signature, RpcPackageId? id)
         {
             Method = method;
-            Arg = arg;
+            Args = args;
+            Signature = signature;
+            Id = id;
         }
 
+        [JsonPropertyName("method")]
         public string Method { get; }
-        public object?[]? Arg { get; }
 
-        [JsonInclude]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public override RpcPackageKind Kind => RpcPackageKind.Req;
+        [JsonPropertyName("params")]
+        public object?[]? Args { get; }
+
+        [JsonPropertyName("signature")]
+        public string? Signature { get; }
+
+        [JsonPropertyName("id")]
+        public RpcPackageId? Id { get; }
     }
 
     public class RpcResponse : RpcPackage
     {
         [JsonConstructor]
-        public RpcResponse(object? ret, object?[]? refRet, string? err)
+        public RpcResponse(object? result, object?[]? refResults, RpcPackageId id)
         {
-            Ret = ret;
-            RefRet = refRet;
-            Err = err;
+            Result = result;
+            RefResults = refResults;
+            Id = id;
         }
 
-        public object? Ret { get; }
-        public object?[]? RefRet { get; }
-        public string? Err { get; }
+        [JsonPropertyName("result")]
+        public object? Result { get; }
 
-        [JsonInclude]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public override RpcPackageKind Kind => RpcPackageKind.Resp;
+        [JsonPropertyName("ref_results")]
+        public object?[]? RefResults { get; }
+
+
+        [JsonPropertyName("id")]
+        public RpcPackageId Id { get; }
     }
 
-    public class RpcPackageConverter : JsonConverter<RpcPackage>
+    public class RpcErrorResponse : RpcPackage
     {
-        public override RpcPackage? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        [JsonConstructor]
+        public RpcErrorResponse(RpcError error, RpcPackageId id)
         {
-            JsonDocument doc = JsonDocument.ParseValue(ref reader);
-            if (doc.RootElement.ValueKind != JsonValueKind.Object)
-                throw new JsonException($"Cannot deserialize from {doc.RootElement.ValueKind}");
-            if (!doc.RootElement.TryGetProperty(nameof(RpcPackage.Kind), out JsonElement eleKind))
-                throw new JsonException("There isn't an element named 'Kind' in the Object");
-            
-            RpcPackageKind kind = 
-                eleKind.Deserialize<RpcPackageKind>(options);
-            return kind switch
-            {
-                RpcPackageKind.Req => JsonSerializer.Deserialize<RpcRequest>(doc, options),
-                RpcPackageKind.Resp => JsonSerializer.Deserialize<RpcResponse>(doc, options),
-
-                _ => throw new JsonException("Not a valid RpcPackage")
-            };
+            Error = error;
+            Id = id;
         }
 
-        public override void Write(Utf8JsonWriter writer, RpcPackage value, JsonSerializerOptions options)
+        [JsonPropertyName("error")]
+        public RpcError Error { get; }
+
+
+        [JsonPropertyName("id")]
+        public RpcPackageId Id { get; }
+    }
+
+    public struct RpcError
+    {
+        [JsonConstructor]
+        public RpcError(int code, string message, object? data)
         {
-            if (value == null)
-                writer.WriteNullValue();
-            else
-                JsonSerializer.Serialize(value, value.GetType(), options);
+            Code = code;
+            Message = message;
+
+            Data = data;
         }
+
+        public RpcError(RpcErrorCode code, string message, object? data) :
+            this((int)code, message, data)
+        { }
+
+
+        [JsonPropertyName("code")]
+        public int Code { get; }
+
+        [JsonPropertyName("message")]
+        public string Message { get; }
+
+        [JsonPropertyName("data")]
+        public object? Data { get; }
+
+
+        [JsonIgnore]
+        public bool IsParseError =>
+            Code == (int)RpcErrorCode.ParseError;
+
+        [JsonIgnore]
+        public bool IsInvalidRequest =>
+            Code == (int)RpcErrorCode.InvalidRequest;
+
+        [JsonIgnore]
+        public bool IsMethodNotFound =>
+            Code == (int)RpcErrorCode.MethodNotFound;
+
+        [JsonIgnore]
+        public bool IsInvalidParams =>
+            Code == (int)RpcErrorCode.InvalidParams;
+
+        [JsonIgnore]
+        public bool IsInternalError =>
+            Code == (int)RpcErrorCode.InternalError;
+
+        [JsonIgnore]
+        public bool IsServerError =>
+            Code <= (int)RpcErrorCode.ServerErrorUpBound &&
+            Code >= (int)RpcErrorCode.ServerErrorDownBound;
+    }
+
+    public enum RpcErrorCode
+    {
+        ParseError           = -32700,
+        InvalidRequest       = -32600,
+        MethodNotFound       = -32601,
+        InvalidParams        = -32602,
+        InternalError        = -32603,
+        ServerErrorUpBound   = -32000,
+        ServerErrorDownBound = -32099
     }
 }

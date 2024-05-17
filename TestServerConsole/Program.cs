@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Collections.Generic;
 using EleCho.JsonRpc;
 using TestCommon;
+using System.Threading.Tasks;
 
 int port = 11451;
 
@@ -18,6 +19,8 @@ Console.WriteLine($"Listening {port}");
 while (true)
 {
     TcpClient client = await listener.AcceptTcpClientAsync();                     // 接受一个客户端
+
+    Console.WriteLine($"Client connected: {client.Client.RemoteEndPoint}");
     rpcs.Add(new RpcServer<ICommands>(client.GetStream(), serverCommands));        // 创建并保存 RPC 实例
 }
 
@@ -26,6 +29,10 @@ internal class CommandsImpl : ICommands
     public DateTime DateTimeNow => DateTime.Now;
 
     public int Add(int a, int b) => a + b;
-    public int Add114514(ref int num) => num+=114514;
-    public void WriteLine(string message) => Console.WriteLine("Server print: " + message);
+    public int Add114514(ref int num) => num += 114514;
+    public Task WriteLine(string message)
+    {
+        Console.WriteLine("Server print: " + message);
+        return Task.CompletedTask;
+    }
 }
