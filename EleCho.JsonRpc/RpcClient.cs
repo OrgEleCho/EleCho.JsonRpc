@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using EleCho.JsonRpc.Utils;
+using System.Threading;
+
 
 #if NET6_0_OR_GREATER
 using System.Threading.Tasks.Dataflow;
@@ -17,6 +19,7 @@ namespace EleCho.JsonRpc
     public interface IRpcClient<T> where T : class
     {
         public T Remote { get; }
+
         internal object? ProcessInvocation(MethodInfo? targetMethod, object?[]? args);
         internal Task<object?> ProcessInvocationAsync(MethodInfo? targetMethod, object?[]? args);
     }
@@ -27,8 +30,8 @@ namespace EleCho.JsonRpc
         private readonly Stream send, recv;
         private readonly StreamWriter sendWriter;
         private readonly StreamReader recvReader;
-        private readonly object writeLock = new object();
-        private readonly object readLock = new object();
+        private readonly SemaphoreSlim writeLock = new(1, 1);
+        private readonly SemaphoreSlim readLock = new(1, 1);
 
         private readonly Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache = new();
         private readonly Dictionary<object, RpcPackage> rpcResponseDict = new();
@@ -52,13 +55,13 @@ namespace EleCho.JsonRpc
             Task.Run(MainLoop);
         }
 
-        private void MainLoop()
+        private async Task MainLoop()
         {
             while (!disposed)
             {
                 try
                 {
-                    if (!recvReader.ReadPackage(readLock, out RpcPackage? pkg))
+                    if ((await recvReader.ReadPackageAsync(readLock)) is not RpcPackage pkg)
                     {
                         Dispose();
                         return;

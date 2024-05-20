@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 #region .NET462 Usings
@@ -146,7 +147,7 @@ namespace EleCho.JsonRpc.Utils
         /// <exception cref="InvalidOperationException"></exception>
         /// <exception cref="TargetInvocationException"></exception>
         public static object? ClientProcessInvocation(MethodInfo? targetMethod, object?[]? args,
-            Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, RpcPackage?> recv, object writeLock)
+            Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, RpcPackage?> recv, SemaphoreSlim writeLock)
         {
             if (sendWriter == null || recv == null)
                 throw new InvalidCastException("Instance not initalized");
@@ -185,7 +186,7 @@ namespace EleCho.JsonRpc.Utils
         }
 
         public static async Task<object?> ClientProcessInvocationAsync(MethodInfo? targetMethod, object?[]? args,
-            Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, Task<RpcPackage?>> recv, object writeLock)
+            Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, Task<RpcPackage?>> recv, SemaphoreSlim writeLock)
         {
             if (sendWriter == null || recv == null)
                 throw new InvalidCastException("Instance not initalized");
@@ -593,53 +594,102 @@ namespace EleCho.JsonRpc.Utils
             return null;
         }
 
-        public static bool WritePackage(this StreamWriter writer, object writeLock,
+        public static bool WritePackage(this StreamWriter writer, SemaphoreSlim writeLock,
             RpcPackage package)
         {
             try
             {
-                lock (writeLock)
-                {
-                    string json =
-                        JsonSerializer.Serialize(package, JsonUtils.Options);
+                writeLock.Wait();
+                string json = JsonSerializer.Serialize(package, JsonUtils.Options);
 
-                    writer.WriteLine(json);
+                writer.WriteLine(json);
 
-                    return true;
-                }
+                return true;
             }
             catch
             {
                 return false;
             }
+            finally
+            {
+                writeLock.Release();
+            }
         }
 
-        public static bool ReadPackage(this StreamReader reader, object readLock,
-#if NET6_0_OR_GREATER
-            [NotNullWhen(true)] out RpcPackage? package
-#else
-            out RpcPackage? package
-#endif
-            )
+        public static async Task<bool> WritePackageAsync(
+            this StreamWriter writer, 
+            SemaphoreSlim writeLock,
+            RpcPackage package,
+            CancellationToken cancellationToken = default)
         {
-            package = null;
-
             try
             {
-                lock (readLock)
-                {
-                    string? json = reader.ReadLine();
+                await writeLock.WaitAsync();
 
-                    if (json == null)
-                        return false;
+                string json = JsonSerializer.Serialize(package, JsonUtils.Options);
 
-                    package = JsonSerializer.Deserialize<RpcPackage>(json, JsonUtils.Options);
-                    return package != null;
-                }
+#if NET6_0_OR_GREATER
+                await writer.WriteLineAsync(json.AsMemory(), cancellationToken);
+#else
+                await writer.WriteLineAsync(json);
+#endif
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                writeLock.Release();
+            }
+        }
+
+        public static RpcPackage? ReadPackage(this StreamReader reader, SemaphoreSlim readLock)
+        {
+            try
+            {
+                readLock.Wait();
+                string? json = reader.ReadLine();
+
+                if (json == null)
+                    return null;
+
+                return JsonSerializer.Deserialize<RpcPackage>(json, JsonUtils.Options);
             }
             catch (IOException)
             {
-                return false;
+                return null;
+            }
+            finally
+            {
+                readLock.Release();
+            }
+        }
+
+        public static async Task<RpcPackage?> ReadPackageAsync(
+            this StreamReader reader, 
+            SemaphoreSlim readLock, 
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await readLock.WaitAsync();
+                string? json = await reader.ReadLineAsync();
+
+                if (json == null)
+                    return null;
+
+                return JsonSerializer.Deserialize<RpcPackage>(json, JsonUtils.Options);
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+            finally
+            {
+                readLock.Release();
             }
         }
     }

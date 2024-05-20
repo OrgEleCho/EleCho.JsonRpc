@@ -22,9 +22,8 @@ namespace EleCho.JsonRpc
         private readonly StreamWriter sendWriter;
         private readonly StreamReader recvReader;
 
-        private readonly TImpl implInstance;
-        private readonly object writeLock = new object();
-        private readonly object readLock = new object();
+        private readonly SemaphoreSlim writeLock = new(1, 1);
+        private readonly SemaphoreSlim readLock = new(1, 1);
 
         private readonly Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> clientMethodsCache = new();
         private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> serverMethodsNameCache = new();
@@ -34,6 +33,7 @@ namespace EleCho.JsonRpc
         private bool disposed = false;
 
         public TAction Remote { get; }
+        public TImpl Implementation { get; }
         public bool DisposeBaseStream { get; set; } = false;
 
         public RpcPeer(Stream anotherClient, TImpl implInstance) : this(anotherClient, anotherClient, implInstance) { }
@@ -41,25 +41,27 @@ namespace EleCho.JsonRpc
         {
             if (!typeof(TAction).IsInterface)
                 throw new ArgumentException("Type must be an interface");
+            if (implInstance is null)
+                throw new ArgumentNullException(nameof(implInstance));
 
             this.send = send;
             this.recv = recv;
-            this.implInstance = implInstance;
 
             sendWriter = new StreamWriter(send) { AutoFlush = true };
             recvReader = new StreamReader(recv);
 
             Remote = RpcUtils.CreateDynamicProxy(this);
+            Implementation = implInstance;
             Task.Run(MainLoop);
         }
 
-        private void MainLoop()
+        private async Task MainLoop()
         {
             while (!disposed)
             {
                 try
                 {
-                    if (!recvReader.ReadPackage(readLock, out RpcPackage? pkg))
+                    if ((await recvReader.ReadPackageAsync(readLock)) is not RpcPackage pkg)
                     {
                         Dispose();
                         return;
@@ -67,7 +69,7 @@ namespace EleCho.JsonRpc
 
                     if (pkg is RpcRequest req)
                     {
-                        RpcPackage? r_pak = RpcUtils.ServerProcessRequest(req, serverMethodsNameCache, serverMethodsSignatureCache, implInstance);
+                        RpcPackage? r_pak = await RpcUtils.ServerProcessRequestAsync(req, serverMethodsNameCache, serverMethodsSignatureCache, Implementation);
 
                         if (r_pak == null)
                             continue;
@@ -75,7 +77,7 @@ namespace EleCho.JsonRpc
                         string r_json =
                             JsonSerializer.Serialize(r_pak, JsonUtils.Options);
 
-                        sendWriter.WriteLine(r_json);
+                        await sendWriter.WriteLineAsync(r_json);
                     }
                     else if (pkg is RpcResponse resp)
                     {
@@ -95,7 +97,11 @@ namespace EleCho.JsonRpc
                                 SharedRandom.NextId()),
                             JsonUtils.Options);
 
-                    sendWriter.WriteLine(r_json);
+                    await sendWriter.WriteLineAsync(r_json);
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
                 }
                 catch (IOException)
                 {
@@ -103,7 +109,7 @@ namespace EleCho.JsonRpc
                 }
                 catch
                 {
-                    // ignore
+
                 }
             }
         }
@@ -151,15 +157,15 @@ namespace EleCho.JsonRpc
         RpcPackage? IRpcServer<TImpl>.ProcessInvocation(RpcRequest request)
         {
             EnsureNotDisposed();
-            return 
-                RpcUtils.ServerProcessRequest(request, serverMethodsNameCache, serverMethodsSignatureCache, implInstance);
+            return
+                RpcUtils.ServerProcessRequest(request, serverMethodsNameCache, serverMethodsSignatureCache, Implementation);
         }
 
         Task<RpcPackage?> IRpcServer<TImpl>.ProcessInvocationAsync(RpcRequest request)
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ServerProcessRequestAsync(request, serverMethodsNameCache, serverMethodsSignatureCache, implInstance);
+                RpcUtils.ServerProcessRequestAsync(request, serverMethodsNameCache, serverMethodsSignatureCache, Implementation);
         }
 
         public void Dispose()

@@ -11,6 +11,8 @@ namespace EleCho.JsonRpc
 {
     public interface IRpcServer<T> where T : class
     {
+        public T Implementation { get; }
+
         internal RpcPackage? ProcessInvocation(RpcRequest request);
         internal Task<RpcPackage?> ProcessInvocationAsync(RpcRequest request);
     }
@@ -23,7 +25,7 @@ namespace EleCho.JsonRpc
         public readonly Stream send, recv;
         private readonly StreamWriter sendWriter;
         private readonly StreamReader recvReader;
-        public T Instance { get; }
+        public T Implementation { get; }
 
         public bool DisposeBaseStream { get; set; } = false;
 
@@ -45,26 +47,29 @@ namespace EleCho.JsonRpc
             Disposed?.Invoke(this, EventArgs.Empty);
         }
 
-        public RpcServer(Stream client, T instance) : this(client, client, instance) { }
+        public RpcServer(Stream client, T implementation) : this(client, client, implementation) { }
         public RpcServer(Stream send, Stream recv, T instance)
         {
+            if (instance is null)
+                throw new ArgumentNullException(nameof(instance));
+
             this.send = send;
             this.recv = recv;
-            Instance = instance;
 
             sendWriter = new StreamWriter(send) { AutoFlush = true };
             recvReader = new StreamReader(recv);
+            Implementation = instance;
 
             Task.Run(MainLoop);
         }
 
-        private void MainLoop()
+        private async Task MainLoop()
         {
             while (!disposed)
             {
                 try
                 {
-                    string? line = recvReader.ReadLine();
+                    string? line = await recvReader.ReadLineAsync();
 
 #if DEBUG
                     Debug.WriteLine($"Server received package: {line}");
@@ -81,7 +86,7 @@ namespace EleCho.JsonRpc
 
                     if (pkg is RpcRequest req)
                     {
-                        RpcPackage? r_pkg = RpcUtils.ServerProcessRequest(req, methodsNameCache, methodsSignatureCache, Instance);
+                        RpcPackage? r_pkg = await RpcUtils.ServerProcessRequestAsync(req, methodsNameCache, methodsSignatureCache, Implementation);
 
                         if (r_pkg == null)
                             continue;
@@ -101,7 +106,7 @@ namespace EleCho.JsonRpc
                                 SharedRandom.NextId()),
                             JsonUtils.Options);
 
-                    sendWriter.WriteLine(r_json);
+                    await sendWriter.WriteLineAsync(r_json);
                 }
                 catch (IOException)
                 {
@@ -114,14 +119,14 @@ namespace EleCho.JsonRpc
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ServerProcessRequest(request, methodsNameCache, methodsSignatureCache, Instance);
+                RpcUtils.ServerProcessRequest(request, methodsNameCache, methodsSignatureCache, Implementation);
         }
 
         Task<RpcPackage?> IRpcServer<T>.ProcessInvocationAsync(RpcRequest request)
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ServerProcessRequestAsync(request, methodsNameCache, methodsSignatureCache, Instance);
+                RpcUtils.ServerProcessRequestAsync(request, methodsNameCache, methodsSignatureCache, Implementation);
         }
 
         void EnsureNotDisposed()

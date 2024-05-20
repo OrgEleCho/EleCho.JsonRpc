@@ -17,13 +17,13 @@ client.Connect(ParseIPEndPoint(addr));                 // 连接到服务器
 RpcClient<ICommands> rpc =
     new RpcClient<ICommands>(client.GetStream());        // 创建 RPC 客户端实例
 
-//int num = 10;
-//rpc.Remote.Add114514(ref num);
+int num = 10;
+rpc.Remote.Add114514(ref num);
 
-//if (num == 114524)
-//    Console.WriteLine("带 ref 参数的 RPC 调用成功");
+if (num == 114524)
+    Console.WriteLine("带 ref 参数的 RPC 调用成功");
 
-//Console.WriteLine("当前服务器时间: " + rpc.Remote.DateTimeNow);
+Console.WriteLine("当前服务器时间: " + rpc.Remote.DateTimeNow);
 
 while (true)
 {
@@ -31,7 +31,7 @@ while (true)
     if (input == null)
         break;
 
-    await rpc.Remote.WriteLine(input);                        // 调用服务端 WriteLine 方法
+    rpc.Remote.WriteLine(input);                        // 调用服务端 WriteLine 方法
 }
 
 IPEndPoint ParseIPEndPoint(string addr)
