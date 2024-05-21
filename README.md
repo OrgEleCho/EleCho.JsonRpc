@@ -9,16 +9,23 @@ Simple JSON based RPC library.
 ## 传输 / Transmission
 
 ```txt
---> 包头(四字节整数) + {"Method":"方法名","Arg":["参数"]}
-<-- 包头(四字节整数) + {"Ret":"返回值","RefRet":["引用返回值"],"Err":"错误信息"}
+--> {"jsonrpc":"2.0","method":"方法名","signature":"方法签名","params":["参数"],"id":"ID"}
+<-- {"jsonrpc":"2.0","result":"返回值","id":"ID"}
 ```
 ```txt
---> header(four-byte integer) + {"Method":"method name","Arg":["arguments"]}
-<-- header(four-byte integer) + {"Ret":"return value","RefRet":["reference returns"],"Err":"error message"}
+--> {"jsonrpc":"2.0","method":"method name","signature":"method signature","params":["parameter"],"id":"ID"}
+<-- {"jsonrpc":"2.0","result":"return value","id":"ID"}
 ```
 
-> 注: 当方法正确响应返回值时, Err 字段应该为 null \
-> Note: The Err field should be null when the method responds correctly with the return value
+> 规范: [JSON-RPC 2.0 规范](https://wiki.geekdream.com/Specification/json-rpc_2.0.html) \
+> Specification: [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
+
+## 功能 / Features
+
+- [x] 基本功能(Basic features)
+- [x] 异步方法(Async methods)
+- [x] Ref/Out 参数(Ref/Out parameters)
+- [ ] 批量请求(Batch request)
 
 ## 使用 / Usage
 

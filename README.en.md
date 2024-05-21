@@ -7,11 +7,18 @@ Simple JSON based RPC library.
 ## Transmission
 
 ```txt
---> header(four-byte integer) + {"Method":"method name","Arg":["arguments"]}
-<-- header(four-byte integer) + {"Ret":"return value","RefRet":["reference returns"],"Err":"error message"}
+--> {"jsonrpc":"2.0","method":"method name","signature":"method signature","params":["parameter"],"id":"ID"}
+<-- {"jsonrpc":"2.0","result":"return value","id":"ID"}
 ```
 
-> Note: The Err field should be null when the method responds correctly with the return value
+> Specification: [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
+
+## Features
+
+- [x] Basic features
+- [x] Async methods
+- [x] Ref/Out parameters
+- [ ] Batch request
 
 ## Usage
 

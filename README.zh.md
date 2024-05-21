@@ -7,11 +7,18 @@
 ## 传输
 
 ```txt
---> 包头(四字节整数) + {"Method":"方法名","Arg":["参数"]}
-<-- 包头(四字节整数) + {"Ret":"返回值","RefRet":["引用返回值"],"Err":"错误信息"}
+--> {"jsonrpc":"2.0","method":"方法名","signature":"方法签名","params":["参数"],"id":"ID"}
+<-- {"jsonrpc":"2.0","result":"返回值","id":"ID"}
 ```
 
-> 注: 当方法正确响应返回值时, Err 字段应该为 null
+> 规范: [JSON-RPC 2.0 规范](https://wiki.geekdream.com/Specification/json-rpc_2.0.html)
+
+## 功能
+
+- [x] 基本功能
+- [x] 异步方法
+- [x] Ref/Out 参数
+- [ ] 批量请求
 
 ## 使用
 
