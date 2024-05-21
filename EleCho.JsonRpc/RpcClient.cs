@@ -159,7 +159,7 @@ namespace EleCho.JsonRpc
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ClientProcessInvocationAsync(targetMethod, args, _methodsCache, _sendWriter, ReceiveResponseAsync, _writeLock);
+                RpcUtils.ClientProcessInvocationAsync(targetMethod, args, _methodsCache, _sendWriter, ReceiveResponseAsync, _writeLock, _cancellationTokenSource.Token);
         }
 
         public event EventHandler? Disposed;

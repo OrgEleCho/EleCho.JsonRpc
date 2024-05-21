@@ -186,7 +186,7 @@ namespace EleCho.JsonRpc.Utils
         }
 
         public static async Task<object?> ClientProcessInvocationAsync(MethodInfo? targetMethod, object?[]? args,
-            Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, Task<RpcPackage?>> recv, SemaphoreSlim writeLock)
+            Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, Task<RpcPackage?>> recv, SemaphoreSlim writeLock, CancellationToken cancellationToken = default)
         {
             if (sendWriter == null || recv == null)
                 throw new InvalidCastException("Instance not initalized");
@@ -206,7 +206,8 @@ namespace EleCho.JsonRpc.Utils
 
             // send the request
             await sendWriter.WritePackageAsync(writeLock,
-                new RpcRequest(targetMethod.Name, args, methodStorage.Signature, id));
+                new RpcRequest(targetMethod.Name, args, methodStorage.Signature, id),
+                cancellationToken);
 
             // recv the response
             RpcPackage? r_pak = await recv.Invoke(id);

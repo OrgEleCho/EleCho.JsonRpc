@@ -6,13 +6,13 @@ using EleCho.JsonRpc;
 using TestCommon;
 
 Console.Write("Addr: ");
-var addr = Console.ReadLine();                          // 用户输入地址
+var addr = Console.ReadLine();                           // 用户输入地址
 
 if (string.IsNullOrWhiteSpace(addr))
     addr = "127.0.0.1:11451";
 
 TcpClient client = new TcpClient();
-client.Connect(ParseIPEndPoint(addr));                 // 连接到服务器
+client.Connect(ParseIPEndPoint(addr));                   // 连接到服务器
 
 RpcClient<ICommands> rpc =
     new RpcClient<ICommands>(client.GetStream());        // 创建 RPC 客户端实例

@@ -113,7 +113,7 @@ namespace EleCho.JsonRpc
                 }
                 catch
                 {
-
+                    // ignore
                 }
             }
 
@@ -165,7 +165,7 @@ namespace EleCho.JsonRpc
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ClientProcessInvocationAsync(targetMethod, args, _clientMethodsCache, _sendWriter, ReceiveResponseAsync, _writeLock);
+                RpcUtils.ClientProcessInvocationAsync(targetMethod, args, _clientMethodsCache, _sendWriter, ReceiveResponseAsync, _writeLock, _cancellationTokenSource.Token);
         }
 
         RpcPackage? IRpcServer<TImpl>.ProcessInvocation(RpcRequest request)
@@ -179,7 +179,7 @@ namespace EleCho.JsonRpc
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ServerProcessRequestAsync(request, _serverMethodsNameCache, _serverMethodsSignatureCache, Implementation);
+                RpcUtils.ServerProcessRequestAsync(request, _serverMethodsNameCache, _serverMethodsSignatureCache, Implementation, _cancellationTokenSource.Token);
         }
 
         public void Dispose()

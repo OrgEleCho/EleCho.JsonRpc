@@ -21,6 +21,7 @@ namespace EleCho.JsonRpc
         internal Task<RpcPackage?> ProcessInvocationAsync(RpcRequest request);
     }
 
+
     public class RpcServer<T> : IRpcServer<T>, IDisposable where T : class
     {
         public readonly Stream _send, _recv;
@@ -121,6 +122,10 @@ namespace EleCho.JsonRpc
                 {
                     Dispose();
                 }
+                catch
+                {
+                    // ignore
+                }
             }
 
             async Task ProcessRequestAndRespondAsync(RpcRequest requestPackage)
@@ -145,7 +150,7 @@ namespace EleCho.JsonRpc
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ServerProcessRequestAsync(request, _methodsNameCache, _methodsSignatureCache, Implementation);
+                RpcUtils.ServerProcessRequestAsync(request, _methodsNameCache, _methodsSignatureCache, Implementation, _cancellationTokenSource.Token);
         }
 
         void EnsureNotDisposed()

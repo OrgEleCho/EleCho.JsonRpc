@@ -34,6 +34,7 @@ internal class CommandsImpl : ICommands
 
     public int Add(int a, int b)
     {
+        Thread.Sleep(3000);
         return a + b;
     }
     public int Add114514(ref int num) => num += 114514;
@@ -41,6 +42,11 @@ internal class CommandsImpl : ICommands
     {
         await Task.Delay(3000);
         return a + b;
+    }
+
+    public void ThrowException()
+    {
+        throw new NotImplementedException();
     }
 
     public void WriteLine(string message)
