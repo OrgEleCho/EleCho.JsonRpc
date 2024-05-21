@@ -14,9 +14,14 @@ using System.Threading.Tasks.Dataflow;
 
 namespace EleCho.JsonRpc
 {
+    /// <summary>
+    /// JSON RPC Peer
+    /// </summary>
+    /// <typeparam name="TAction"></typeparam>
+    /// <typeparam name="TImpl"></typeparam>
     public class RpcPeer<TAction, TImpl> : IRpcServer<TImpl>, IRpcClient<TAction>, IDisposable
         where TAction : class
-        where TImpl : class
+        where TImpl : class, TAction
     {
         private readonly Stream _send, _recv;
         private readonly StreamWriter _sendWriter;
@@ -35,20 +40,56 @@ namespace EleCho.JsonRpc
         private bool _disposed = false;
 
 
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public TAction Remote { get; }
+
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public TImpl Implementation { get; }
 
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public bool AllowConcurrentInvoking { get; set; } = true;
+
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public bool AllowParallelInvoking { get; set; } = false;
+
+        /// <summary>
+        /// Whether dispose base streams while disposing current object
+        /// </summary>
         public bool DisposeBaseStream { get; set; } = false;
 
-        public RpcPeer(Stream anotherClient, TImpl implInstance) : this(anotherClient, anotherClient, implInstance) { }
-        public RpcPeer(Stream send, Stream recv, TImpl implInstance)
+        /// <summary>
+        /// Create a new instance of JSON RPC Peer
+        /// </summary>
+        /// <param name="otherPeer">Network stream for communication with the other peer</param>
+        /// <param name="implementation">Server side method implementations instance</param>
+        public RpcPeer(Stream otherPeer, TImpl implementation) : this(otherPeer, otherPeer, implementation) { }
+
+        /// <summary>
+        /// Create a new instance of JSON RPC Peer
+        /// </summary>
+        /// <param name="send"></param>
+        /// <param name="recv"></param>
+        /// <param name="implementation"></param>
+        /// <exception cref="ArgumentException">The <typeparamref name="TAction"/> is not interface</exception>
+        /// <exception cref="ArgumentNullException">Some parameter is null</exception>
+        public RpcPeer(Stream send, Stream recv, TImpl implementation)
         {
             if (!typeof(TAction).IsInterface)
                 throw new ArgumentException("Type must be an interface");
-            if (implInstance is null)
-                throw new ArgumentNullException(nameof(implInstance));
+            if (send is null)
+                throw new ArgumentNullException(nameof(send));
+            if (recv is null)
+                throw new ArgumentNullException(nameof(recv));
+            if (implementation is null)
+                throw new ArgumentNullException(nameof(implementation));
 
             this._send = send;
             this._recv = recv;
@@ -57,7 +98,7 @@ namespace EleCho.JsonRpc
             _recvReader = new StreamReader(recv);
 
             Remote = RpcUtils.CreateDynamicProxy(this);
-            Implementation = implInstance;
+            Implementation = implementation;
             Task.Run(MainLoop);
         }
 
@@ -182,6 +223,9 @@ namespace EleCho.JsonRpc
                 RpcUtils.ServerProcessRequestAsync(request, _serverMethodsNameCache, _serverMethodsSignatureCache, Implementation, _cancellationTokenSource.Token);
         }
 
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public void Dispose()
         {
             if (_disposed)
@@ -207,6 +251,10 @@ namespace EleCho.JsonRpc
                 throw new ObjectDisposedException("The RpcPeer was disposed.");
         }
 
+
+        /// <summary>
+        /// Occurs when the current object was disposed
+        /// </summary>
         public event EventHandler? Disposed;
     }
 }

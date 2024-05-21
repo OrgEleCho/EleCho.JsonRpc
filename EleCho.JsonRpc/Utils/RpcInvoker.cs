@@ -11,13 +11,26 @@ using EleCho.JsonRpc.Utils;
 
 namespace EleCho.JsonRpc.Utils
 {
+    /// <summary>
+    /// Proxy for RPC client
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class RpcInvoker<T> : DispatchProxy where T : class
     {
         static readonly Type TaskType = typeof(Task);
 
+        /// <summary>
+        /// RPC Client instance
+        /// </summary>
         public IRpcClient<T> Client = null!;
 
 
+        /// <summary>
+        /// Method invoking implementation
+        /// </summary>
+        /// <param name="targetMethod"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
             if (targetMethod == null)

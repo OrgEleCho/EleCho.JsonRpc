@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Library</OutputType>
     <TargetFrameworks>net6.0;net8.0;netstandard2.0</TargetFrameworks>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -10,12 +11,17 @@
     <Copyright>Copyright (c) 2023 EleCho</Copyright>
     <PackageProjectUrl>https://github.com/EleChoNet/EleCho.JsonRpc</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/EleChoNet/EleCho.JsonRpc</RepositoryUrl>
+    <RepositoryUrl>https://github.com/OrgEleCho/EleCho.JsonRpc</RepositoryUrl>
     <PackageTags>RPC, JSON</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>2.0.0</Version>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'!='netstandard2.0'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

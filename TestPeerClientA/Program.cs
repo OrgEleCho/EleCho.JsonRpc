@@ -15,7 +15,7 @@ List<RpcPeer<ICommands, CommandsImpl>> rpcs = new List<RpcPeer<ICommands, Comman
 
 Console.WriteLine($"Listening {port}");
 
-Task.Run(async () =>
+_ = Task.Run(async () =>
 {
     while (true)
     {
@@ -48,6 +48,8 @@ internal class CommandsImpl : ICommands
         await Task.Delay(3000);
         return a + b;
     }
+
+    public void ThrowException() => throw new NotImplementedException();
 
     public void WriteLine(string message)
     {

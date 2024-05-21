@@ -55,6 +55,8 @@ internal class CommandsImpl : ICommands
         return a + b;
     }
 
+    public void ThrowException() => throw new NotImplementedException();
+
     public void WriteLine(string message)
     {
         Console.WriteLine("Server print: " + message);

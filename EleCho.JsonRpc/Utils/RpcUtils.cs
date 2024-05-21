@@ -11,12 +11,10 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-#region .NET462 Usings
-#if NET462_OR_GREATER
-using Castle.DynamicProxy;
-using EleCho.JsonRpc.Utils;
+#if NETSTANDARD2_0
+#pragma warning disable CS8604 // 引用类型参数可能为 null。
+#pragma warning disable CS8602 // 解引用可能出现空引用。
 #endif
-#endregion
 
 namespace EleCho.JsonRpc.Utils
 {

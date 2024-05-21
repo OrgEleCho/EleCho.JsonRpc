@@ -5,14 +5,14 @@ using EleCho.JsonRpc.Utils;
 
 namespace EleCho.JsonRpc
 {
-    public abstract record class RpcPackage
+    internal abstract record class RpcPackage
     {
         [JsonInclude]
         [JsonPropertyName("jsonrpc")]
         public string JsonRpc => "2.0";
     }
 
-    public record struct RpcPackageId
+    internal record struct RpcPackageId
     {
         private RpcPackageId(object value)
         {
@@ -53,7 +53,7 @@ namespace EleCho.JsonRpc
         }
     }
 
-    public record class RpcRequest : RpcPackage
+    internal record class RpcRequest : RpcPackage
     {
         [JsonConstructor]
         public RpcRequest(string method, object?[]? args, string? signature, RpcPackageId? id)
@@ -77,7 +77,7 @@ namespace EleCho.JsonRpc
         public RpcPackageId? Id { get; }
     }
 
-    public record class RpcResponse : RpcPackage
+    internal record class RpcResponse : RpcPackage
     {
         [JsonConstructor]
         public RpcResponse(object? result, object?[]? refResults, RpcPackageId id)
@@ -98,7 +98,7 @@ namespace EleCho.JsonRpc
         public RpcPackageId Id { get; }
     }
 
-    public record class RpcErrorResponse : RpcPackage
+    internal record class RpcErrorResponse : RpcPackage
     {
         [JsonConstructor]
         public RpcErrorResponse(RpcError error, RpcPackageId id)
@@ -115,7 +115,7 @@ namespace EleCho.JsonRpc
         public RpcPackageId Id { get; }
     }
 
-    public struct RpcError
+    internal struct RpcError
     {
         [JsonConstructor]
         public RpcError(int code, string message, object? data)
@@ -167,7 +167,7 @@ namespace EleCho.JsonRpc
             Code >= (int)RpcErrorCode.ServerErrorDownBound;
     }
 
-    public enum RpcErrorCode
+    internal enum RpcErrorCode
     {
         ParseError           = -32700,
         InvalidRequest       = -32600,

@@ -10,11 +10,25 @@ using EleCho.JsonRpc.Utils;
 
 namespace EleCho.JsonRpc
 {
+    /// <summary>
+    /// JSON RPC Server abstraction
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public interface IRpcServer<T> where T : class
     {
+        /// <summary>
+        /// Server side method implementations instance
+        /// </summary>
         public T Implementation { get; }
 
+        /// <summary>
+        /// Allow concurrent invoking. When concurrent calls are allowed, methods that return a Task will not be waited
+        /// </summary>
         public bool AllowConcurrentInvoking { get; set; }
+
+        /// <summary>
+        /// Allow parallel invoking. When concurrent calls are allowed, each method call is executed in a new thread
+        /// </summary>
         public bool AllowParallelInvoking { get; set; }
 
         internal RpcPackage? ProcessInvocation(RpcRequest request);
@@ -22,9 +36,14 @@ namespace EleCho.JsonRpc
     }
 
 
-    public class RpcServer<T> : IRpcServer<T>, IDisposable where T : class
+    /// <summary>
+    /// JSON RPC Server
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class RpcServer<T> : IRpcServer<T>, IDisposable 
+        where T : class
     {
-        public readonly Stream _send, _recv;
+        private readonly Stream _send, _recv;
         private readonly StreamWriter _sendWriter;
         private readonly StreamReader _recvReader;
 
@@ -39,12 +58,29 @@ namespace EleCho.JsonRpc
         private bool _disposed = false;
 
 
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public T Implementation { get; }
 
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public bool AllowConcurrentInvoking { get; set; } = true;
+
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public bool AllowParallelInvoking { get; set; } = false;
+
+        /// <summary>
+        /// Whether dispose base streams while disposing current object
+        /// </summary>
         public bool DisposeBaseStream { get; set; } = false;
 
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public void Dispose()
         {
             if (_disposed)
@@ -64,18 +100,35 @@ namespace EleCho.JsonRpc
             Disposed?.Invoke(this, EventArgs.Empty);
         }
 
+        /// <summary>
+        /// Create a new instance of JSON RPC Server
+        /// </summary>
+        /// <param name="client">Network stream for communication</param>
+        /// <param name="implementation">Server side method implementations instance</param>
         public RpcServer(Stream client, T implementation) : this(client, client, implementation) { }
-        public RpcServer(Stream send, Stream recv, T instance)
+
+        /// <summary>
+        /// Create a new instance of JSON RPC Server
+        /// </summary>
+        /// <param name="send">Network stream for sending data</param>
+        /// <param name="recv">Network stream for receiving data</param>
+        /// <param name="implementation">Server side method implementations instance</param>
+        /// <exception cref="ArgumentNullException">Some parameter is null</exception>
+        public RpcServer(Stream send, Stream recv, T implementation)
         {
-            if (instance is null)
-                throw new ArgumentNullException(nameof(instance));
+            if (implementation is null)
+                throw new ArgumentNullException(nameof(implementation));
+            if (send is null)
+                throw new ArgumentNullException(nameof(send));
+            if (recv is null)
+                throw new ArgumentNullException(nameof(recv));
 
             this._send = send;
             this._recv = recv;
 
             _sendWriter = new StreamWriter(send) { AutoFlush = true };
             _recvReader = new StreamReader(recv);
-            Implementation = instance;
+            Implementation = implementation;
 
             Task.Run(MainLoop);
         }
@@ -159,6 +212,10 @@ namespace EleCho.JsonRpc
                 throw new ObjectDisposedException($"The RpcServer was disposed.");
         }
 
+
+        /// <summary>
+        /// Occurs when the current object was disposed
+        /// </summary>
         public event EventHandler? Disposed;
     }
 }

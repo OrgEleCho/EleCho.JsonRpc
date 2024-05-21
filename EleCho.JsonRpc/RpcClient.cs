@@ -15,9 +15,15 @@ using System.Threading.Tasks.Dataflow;
 
 namespace EleCho.JsonRpc
 {
-
+    /// <summary>
+    /// JSON RPC Client abstraction
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public interface IRpcClient<T> where T : class
     {
+        /// <summary>
+        /// Instance for invoking remote methods
+        /// </summary>
         public T Remote { get; }
 
         internal object? ProcessInvocation(MethodInfo? targetMethod, object?[]? args);
@@ -25,7 +31,12 @@ namespace EleCho.JsonRpc
     }
 
 
-    public partial class RpcClient<T> : IRpcClient<T> where T : class
+    /// <summary>
+    /// JSON RPC Client
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class RpcClient<T> : IRpcClient<T>, IDisposable
+        where T : class
     {
         private readonly Stream _send, _recv;
         private readonly StreamWriter _sendWriter;
@@ -42,14 +53,37 @@ namespace EleCho.JsonRpc
         private bool _disposed = false;
 
 
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public T Remote { get; }
+
+        /// <summary>
+        /// Whether dispose base streams while disposing current object
+        /// </summary>
         public bool DisposeBaseStream { get; set; } = false;
 
+        /// <summary>
+        /// Construct a new JSON RPC Client
+        /// </summary>
+        /// <param name="server">Network stream for communication</param>
         public RpcClient(Stream server) : this(server, server) { }
+
+        /// <summary>
+        /// Construct a new JSON RPC Client
+        /// </summary>
+        /// <param name="send">Network stream for sending data</param>
+        /// <param name="recv">Network stream for receiving data</param>
+        /// <exception cref="ArgumentException">The <typeparamref name="T"/> is not interface</exception>
+        /// <exception cref="ArgumentNullException">Some parameter is null</exception>
         public RpcClient(Stream send, Stream recv)
         {
             if (!typeof(T).IsInterface)
                 throw new ArgumentException("Type must be an interface");
+            if (send is null)
+                throw new ArgumentNullException(nameof(send));
+            if (recv is null)
+                throw new ArgumentNullException(nameof(recv));
 
             this._send = send;
             this._recv = recv;
@@ -123,6 +157,9 @@ namespace EleCho.JsonRpc
             }
         }
 
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public void Dispose()
         {
             if (_disposed)
@@ -162,6 +199,10 @@ namespace EleCho.JsonRpc
                 RpcUtils.ClientProcessInvocationAsync(targetMethod, args, _methodsCache, _sendWriter, ReceiveResponseAsync, _writeLock, _cancellationTokenSource.Token);
         }
 
+
+        /// <summary>
+        /// Occurs when the current object was disposed
+        /// </summary>
         public event EventHandler? Disposed;
     }
 }
