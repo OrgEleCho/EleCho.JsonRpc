@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using EleCho.JsonRpc.Utils;
 
@@ -25,11 +26,14 @@ namespace EleCho.JsonRpc
         public readonly Stream send, recv;
         private readonly StreamWriter sendWriter;
         private readonly StreamReader recvReader;
-        public T Implementation { get; }
+        private readonly SemaphoreSlim writeLock = new(1, 1);
+        private readonly SemaphoreSlim readLock = new(1, 1);
+        private bool disposed = false;
 
+        public T Implementation { get; }
+        public bool AllowParallelInvoking { get; set; } = false;
         public bool DisposeBaseStream { get; set; } = false;
 
-        bool disposed = false;
         public void Dispose()
         {
             if (disposed)
@@ -69,44 +73,35 @@ namespace EleCho.JsonRpc
             {
                 try
                 {
-                    string? line = await recvReader.ReadLineAsync();
+                    RpcPackage? package = await recvReader.ReadPackageAsync(readLock);
 
 #if DEBUG
-                    Debug.WriteLine($"Server received package: {line}");
+                    Debug.WriteLine($"Server received package: {package}");
 #endif
 
-                    if (line == null)
+                    if (package is null)
                     {
                         Dispose();
                         break;
                     }
 
-                    RpcPackage? pkg =
-                        JsonSerializer.Deserialize<RpcPackage>(line, JsonUtils.Options);
-
-                    if (pkg is RpcRequest req)
+                    if (package is RpcRequest requestPackage)
                     {
-                        RpcPackage? r_pkg = await RpcUtils.ServerProcessRequestAsync(req, methodsNameCache, methodsSignatureCache, Implementation);
+                        RpcPackage? r_pkg = await RpcUtils.ServerProcessRequestAsync(requestPackage, methodsNameCache, methodsSignatureCache, Implementation);
 
                         if (r_pkg == null)
                             continue;
 
-                        string r_json =
-                            JsonSerializer.Serialize(r_pkg, JsonUtils.Options);
-
-                        sendWriter.WriteLine(r_json);
+                        await sendWriter.WritePackageAsync(writeLock, r_pkg);
                     }
                 }
                 catch (JsonException ex)
                 {
-                    string r_json =
-                        JsonSerializer.Serialize(
-                            new RpcErrorResponse(
-                                new RpcError(RpcErrorCode.ParseError, ex.Message, ex.Data),
-                                SharedRandom.NextId()),
-                            JsonUtils.Options);
+                    var errorPackage = new RpcErrorResponse(
+                        new RpcError(RpcErrorCode.ParseError, ex.Message, ex.Data),
+                        SharedRandom.NextId());
 
-                    await sendWriter.WriteLineAsync(r_json);
+                    await sendWriter.WritePackageAsync(writeLock, errorPackage);
                 }
                 catch (IOException)
                 {

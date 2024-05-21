@@ -5,7 +5,7 @@ using EleCho.JsonRpc.Utils;
 
 namespace EleCho.JsonRpc
 {
-    public abstract class RpcPackage
+    public abstract record class RpcPackage
     {
         [JsonInclude]
         [JsonPropertyName("jsonrpc")]
@@ -53,7 +53,7 @@ namespace EleCho.JsonRpc
         }
     }
 
-    public class RpcRequest : RpcPackage
+    public record class RpcRequest : RpcPackage
     {
         [JsonConstructor]
         public RpcRequest(string method, object?[]? args, string? signature, RpcPackageId? id)
@@ -77,7 +77,7 @@ namespace EleCho.JsonRpc
         public RpcPackageId? Id { get; }
     }
 
-    public class RpcResponse : RpcPackage
+    public record class RpcResponse : RpcPackage
     {
         [JsonConstructor]
         public RpcResponse(object? result, object?[]? refResults, RpcPackageId id)
@@ -98,7 +98,7 @@ namespace EleCho.JsonRpc
         public RpcPackageId Id { get; }
     }
 
-    public class RpcErrorResponse : RpcPackage
+    public record class RpcErrorResponse : RpcPackage
     {
         [JsonConstructor]
         public RpcErrorResponse(RpcError error, RpcPackageId id)

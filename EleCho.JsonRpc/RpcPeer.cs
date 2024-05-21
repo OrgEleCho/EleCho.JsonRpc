@@ -69,15 +69,12 @@ namespace EleCho.JsonRpc
 
                     if (pkg is RpcRequest req)
                     {
-                        RpcPackage? r_pak = await RpcUtils.ServerProcessRequestAsync(req, serverMethodsNameCache, serverMethodsSignatureCache, Implementation);
+                        RpcPackage? responsePackage = await RpcUtils.ServerProcessRequestAsync(req, serverMethodsNameCache, serverMethodsSignatureCache, Implementation);
 
-                        if (r_pak == null)
+                        if (responsePackage == null)
                             continue;
 
-                        string r_json =
-                            JsonSerializer.Serialize(r_pak, JsonUtils.Options);
-
-                        await sendWriter.WriteLineAsync(r_json);
+                        await sendWriter.WritePackageAsync(writeLock, responsePackage);
                     }
                     else if (pkg is RpcResponse resp)
                     {
@@ -90,14 +87,11 @@ namespace EleCho.JsonRpc
                 }
                 catch (JsonException ex)
                 {
-                    string r_json =
-                        JsonSerializer.Serialize(
-                            new RpcErrorResponse(
-                                new RpcError(RpcErrorCode.ParseError, ex.Message, ex.Data),
-                                SharedRandom.NextId()),
-                            JsonUtils.Options);
+                    var errorPackage = new RpcErrorResponse(
+                        new RpcError(RpcErrorCode.ParseError, ex.Message, ex.Data),
+                        SharedRandom.NextId());
 
-                    await sendWriter.WriteLineAsync(r_json);
+                    await sendWriter.WritePackageAsync(writeLock, errorPackage);
                 }
                 catch (ObjectDisposedException)
                 {
