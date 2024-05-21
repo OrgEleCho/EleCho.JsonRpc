@@ -145,7 +145,7 @@ namespace EleCho.JsonRpc.Utils
         /// <exception cref="InvalidOperationException"></exception>
         /// <exception cref="TargetInvocationException"></exception>
         public static object? ClientProcessInvocation(MethodInfo? targetMethod, object?[]? args,
-            Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, RpcPackage?> recv, SemaphoreSlim writeLock)
+            IDictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, RpcPackage?> recv, SemaphoreSlim writeLock)
         {
             if (sendWriter == null || recv == null)
                 throw new InvalidCastException("Instance not initalized");
@@ -184,7 +184,7 @@ namespace EleCho.JsonRpc.Utils
         }
 
         public static async Task<object?> ClientProcessInvocationAsync(MethodInfo? targetMethod, object?[]? args,
-            Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, Task<RpcPackage?>> recv, SemaphoreSlim writeLock, CancellationToken cancellationToken = default)
+            IDictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> methodsCache, StreamWriter sendWriter, Func<object, Task<RpcPackage?>> recv, SemaphoreSlim writeLock, CancellationToken cancellationToken = default)
         {
             if (sendWriter == null || recv == null)
                 throw new InvalidCastException("Instance not initalized");
@@ -234,8 +234,8 @@ namespace EleCho.JsonRpc.Utils
         /// <param name="targetMethodParams"></param>
         /// <returns></returns>
         public static bool ServerFindMethod<T>(RpcRequest request,
-            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache,
-            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache,
+            IDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache,
+            IDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache,
 #if NET6_0_OR_GREATER
             [NotNullWhen(true)] out MethodInfo? targetMethod, [NotNullWhen(true)] out ParameterInfo[]? targetMethodParams
 #else
@@ -386,8 +386,8 @@ namespace EleCho.JsonRpc.Utils
         }
 
         public static RpcPackage? ServerProcessRequest<T>(RpcRequest request,
-            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache,
-            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache, T instance) where T : class
+            IDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache,
+            IDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache, T instance) where T : class
         {
             if (request == null)
                 return new RpcErrorResponse(
@@ -468,8 +468,8 @@ namespace EleCho.JsonRpc.Utils
         }
 
         public static async Task<RpcPackage?> ServerProcessRequestAsync<T>(RpcRequest request,
-            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache,
-            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache, T instance,
+            IDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache,
+            IDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache, T instance,
             CancellationToken cancellationToken = default) where T : class
         {
             if (request == null)

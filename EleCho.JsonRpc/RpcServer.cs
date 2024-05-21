@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -51,8 +52,8 @@ namespace EleCho.JsonRpc
         private readonly SemaphoreSlim _readLock = new(1, 1);
         private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _methodsNameCache = new();
-        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _methodsSignatureCache = new();
+        private readonly ConcurrentDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _methodsNameCache = new();
+        private readonly ConcurrentDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _methodsSignatureCache = new();
 
 
         private bool _disposed = false;

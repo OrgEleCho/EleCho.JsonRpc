@@ -31,10 +31,10 @@ namespace EleCho.JsonRpc
         private readonly SemaphoreSlim _readLock = new(1, 1);
         private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-        private readonly Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> _clientMethodsCache = new();
-        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _serverMethodsNameCache = new();
-        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _serverMethodsSignatureCache = new();
-        private readonly Dictionary<object, RpcPackage> _rpcResponseDict = new();
+        private readonly ConcurrentDictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> _clientMethodsCache = new();
+        private readonly ConcurrentDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _serverMethodsNameCache = new();
+        private readonly ConcurrentDictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _serverMethodsSignatureCache = new();
+        private readonly ConcurrentDictionary<object, RpcPackage> _rpcResponseDict = new();
 
 
         private bool _disposed = false;
@@ -175,7 +175,7 @@ namespace EleCho.JsonRpc
             {
                 if (_rpcResponseDict.TryGetValue(id, out RpcPackage? resp))
                 {
-                    _rpcResponseDict.Remove(id);
+                    _rpcResponseDict.TryRemove(id, out _);
                     return resp;
                 }
             }
@@ -187,7 +187,7 @@ namespace EleCho.JsonRpc
             {
                 if (_rpcResponseDict.TryGetValue(id, out RpcPackage? resp))
                 {
-                    _rpcResponseDict.Remove(id);
+                    _rpcResponseDict.TryRemove(id, out _);
                     return resp;
                 }
 
