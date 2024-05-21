@@ -18,19 +18,22 @@ namespace EleCho.JsonRpc
         where TAction : class
         where TImpl : class
     {
-        private readonly Stream send, recv;
-        private readonly StreamWriter sendWriter;
-        private readonly StreamReader recvReader;
+        private readonly Stream _send, _recv;
+        private readonly StreamWriter _sendWriter;
+        private readonly StreamReader _recvReader;
 
-        private readonly SemaphoreSlim writeLock = new(1, 1);
-        private readonly SemaphoreSlim readLock = new(1, 1);
+        private readonly SemaphoreSlim _writeLock = new(1, 1);
+        private readonly SemaphoreSlim _readLock = new(1, 1);
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-        private readonly Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> clientMethodsCache = new();
-        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> serverMethodsNameCache = new();
-        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> serverMethodsSignatureCache = new();
-        private readonly Dictionary<object, RpcPackage> rpcResponseDict = new();
+        private readonly Dictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> _clientMethodsCache = new();
+        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _serverMethodsNameCache = new();
+        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _serverMethodsSignatureCache = new();
+        private readonly Dictionary<object, RpcPackage> _rpcResponseDict = new();
 
-        private bool disposed = false;
+
+        private bool _disposed = false;
+
 
         public TAction Remote { get; }
         public TImpl Implementation { get; }
@@ -44,11 +47,11 @@ namespace EleCho.JsonRpc
             if (implInstance is null)
                 throw new ArgumentNullException(nameof(implInstance));
 
-            this.send = send;
-            this.recv = recv;
+            this._send = send;
+            this._recv = recv;
 
-            sendWriter = new StreamWriter(send) { AutoFlush = true };
-            recvReader = new StreamReader(recv);
+            _sendWriter = new StreamWriter(send) { AutoFlush = true };
+            _recvReader = new StreamReader(recv);
 
             Remote = RpcUtils.CreateDynamicProxy(this);
             Implementation = implInstance;
@@ -57,11 +60,11 @@ namespace EleCho.JsonRpc
 
         private async Task MainLoop()
         {
-            while (!disposed)
+            while (!_disposed)
             {
                 try
                 {
-                    if ((await recvReader.ReadPackageAsync(readLock)) is not RpcPackage pkg)
+                    if ((await _recvReader.ReadPackageAsync(_readLock, _cancellationTokenSource.Token)) is not RpcPackage pkg)
                     {
                         Dispose();
                         return;
@@ -69,20 +72,20 @@ namespace EleCho.JsonRpc
 
                     if (pkg is RpcRequest req)
                     {
-                        RpcPackage? responsePackage = await RpcUtils.ServerProcessRequestAsync(req, serverMethodsNameCache, serverMethodsSignatureCache, Implementation);
+                        RpcPackage? responsePackage = await RpcUtils.ServerProcessRequestAsync(req, _serverMethodsNameCache, _serverMethodsSignatureCache, Implementation, _cancellationTokenSource.Token);
 
                         if (responsePackage == null)
                             continue;
 
-                        await sendWriter.WritePackageAsync(writeLock, responsePackage);
+                        await _sendWriter.WritePackageAsync(_writeLock, responsePackage, _cancellationTokenSource.Token);
                     }
                     else if (pkg is RpcResponse resp)
                     {
-                        rpcResponseDict[resp.Id] = resp;
+                        _rpcResponseDict[resp.Id] = resp;
                     }
                     else if (pkg is RpcErrorResponse errResp)
                     {
-                        rpcResponseDict[errResp.Id] = errResp;
+                        _rpcResponseDict[errResp.Id] = errResp;
                     }
                 }
                 catch (JsonException ex)
@@ -91,11 +94,15 @@ namespace EleCho.JsonRpc
                         new RpcError(RpcErrorCode.ParseError, ex.Message, ex.Data),
                         SharedRandom.NextId());
 
-                    await sendWriter.WritePackageAsync(writeLock, errorPackage);
+                    await _sendWriter.WritePackageAsync(_writeLock, errorPackage, _cancellationTokenSource.Token);
                 }
                 catch (ObjectDisposedException)
                 {
                     break;
+                }
+                catch (OperationCanceledException)
+                {
+                    Dispose();
                 }
                 catch (IOException)
                 {
@@ -112,9 +119,9 @@ namespace EleCho.JsonRpc
         {
             while (true)
             {
-                if (rpcResponseDict.TryGetValue(id, out RpcPackage? resp))
+                if (_rpcResponseDict.TryGetValue(id, out RpcPackage? resp))
                 {
-                    rpcResponseDict.Remove(id);
+                    _rpcResponseDict.Remove(id);
                     return resp;
                 }
             }
@@ -124,9 +131,9 @@ namespace EleCho.JsonRpc
         {
             while (true)
             {
-                if (rpcResponseDict.TryGetValue(id, out RpcPackage? resp))
+                if (_rpcResponseDict.TryGetValue(id, out RpcPackage? resp))
                 {
-                    rpcResponseDict.Remove(id);
+                    _rpcResponseDict.Remove(id);
                     return resp;
                 }
 
@@ -138,42 +145,44 @@ namespace EleCho.JsonRpc
         {
             EnsureNotDisposed();
             return 
-                RpcUtils.ClientProcessInvocation(targetMethod, args, clientMethodsCache, sendWriter, ReceiveResponse, writeLock);
+                RpcUtils.ClientProcessInvocation(targetMethod, args, _clientMethodsCache, _sendWriter, ReceiveResponse, _writeLock);
         }
 
         Task<object?> IRpcClient<TAction>.ProcessInvocationAsync(MethodInfo? targetMethod, object?[]? args)
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ClientProcessInvocationAsync(targetMethod, args, clientMethodsCache, sendWriter, ReceiveResponseAsync, writeLock);
+                RpcUtils.ClientProcessInvocationAsync(targetMethod, args, _clientMethodsCache, _sendWriter, ReceiveResponseAsync, _writeLock);
         }
 
         RpcPackage? IRpcServer<TImpl>.ProcessInvocation(RpcRequest request)
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ServerProcessRequest(request, serverMethodsNameCache, serverMethodsSignatureCache, Implementation);
+                RpcUtils.ServerProcessRequest(request, _serverMethodsNameCache, _serverMethodsSignatureCache, Implementation);
         }
 
         Task<RpcPackage?> IRpcServer<TImpl>.ProcessInvocationAsync(RpcRequest request)
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ServerProcessRequestAsync(request, serverMethodsNameCache, serverMethodsSignatureCache, Implementation);
+                RpcUtils.ServerProcessRequestAsync(request, _serverMethodsNameCache, _serverMethodsSignatureCache, Implementation);
         }
 
         public void Dispose()
         {
-            if (disposed)
+            if (_disposed)
                 return;
 
-            disposed = true;
+            _disposed = true;
+            _cancellationTokenSource.Cancel();
+
             if (DisposeBaseStream)
             {
-                send.Dispose();
-                recv.Dispose();
-                sendWriter.Dispose();
-                recvReader.Dispose();
+                _send.Dispose();
+                _recv.Dispose();
+                _sendWriter.Dispose();
+                _recvReader.Dispose();
             }
 
             Disposed?.Invoke(this, EventArgs.Empty);
@@ -181,7 +190,7 @@ namespace EleCho.JsonRpc
 
         void EnsureNotDisposed()
         {
-            if (disposed)
+            if (_disposed)
                 throw new ObjectDisposedException("The RpcPeer was disposed.");
         }
 

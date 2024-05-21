@@ -470,7 +470,8 @@ namespace EleCho.JsonRpc.Utils
 
         public static async Task<RpcPackage?> ServerProcessRequestAsync<T>(RpcRequest request,
             Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache,
-            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache, T instance) where T : class
+            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache, T instance,
+            CancellationToken cancellationToken = default) where T : class
         {
             if (request == null)
                 return new RpcErrorResponse(
@@ -655,7 +656,14 @@ namespace EleCho.JsonRpc.Utils
             try
             {
                 await readLock.WaitAsync();
+
+#if NET8_0_OR_GREATER
+                string? json = await reader.ReadLineAsync(cancellationToken);
+#elif NET6_0_OR_GREATER
+                string? json = await reader.ReadLineAsync().WaitAsync(cancellationToken);
+#else
                 string? json = await reader.ReadLineAsync();
+#endif
 
                 if (json == null)
                     return null;
