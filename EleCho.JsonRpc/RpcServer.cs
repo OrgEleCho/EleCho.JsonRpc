@@ -14,6 +14,9 @@ namespace EleCho.JsonRpc
     {
         public T Implementation { get; }
 
+        public bool AllowConcurrentInvoking { get; set; }
+        public bool AllowParallelInvoking { get; set; }
+
         internal RpcPackage? ProcessInvocation(RpcRequest request);
         internal Task<RpcPackage?> ProcessInvocationAsync(RpcRequest request);
     }
@@ -28,14 +31,16 @@ namespace EleCho.JsonRpc
         private readonly SemaphoreSlim _readLock = new(1, 1);
         private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache = new();
-        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache = new();
+        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _methodsNameCache = new();
+        private readonly Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> _methodsSignatureCache = new();
 
 
         private bool _disposed = false;
 
 
         public T Implementation { get; }
+
+        public bool AllowConcurrentInvoking { get; set; } = true;
         public bool AllowParallelInvoking { get; set; } = false;
         public bool DisposeBaseStream { get; set; } = false;
 
@@ -92,12 +97,12 @@ namespace EleCho.JsonRpc
 
                     if (package is RpcRequest requestPackage)
                     {
-                        RpcPackage? r_pkg = await RpcUtils.ServerProcessRequestAsync(requestPackage, methodsNameCache, methodsSignatureCache, Implementation, _cancellationTokenSource.Token);
+                        var processAndRespondTask = AllowParallelInvoking ?
+                            Task.Run(() => ProcessRequestAndRespondAsync(requestPackage)):
+                            ProcessRequestAndRespondAsync(requestPackage);
 
-                        if (r_pkg == null)
-                            continue;
-
-                        await _sendWriter.WritePackageAsync(_writeLock, r_pkg, _cancellationTokenSource.Token);
+                        if (!AllowConcurrentInvoking)
+                            await processAndRespondTask;
                     }
                 }
                 catch (JsonException ex)
@@ -117,20 +122,30 @@ namespace EleCho.JsonRpc
                     Dispose();
                 }
             }
+
+            async Task ProcessRequestAndRespondAsync(RpcRequest requestPackage)
+            {
+                RpcPackage? r_pkg = await RpcUtils.ServerProcessRequestAsync(requestPackage, _methodsNameCache, _methodsSignatureCache, Implementation, _cancellationTokenSource.Token);
+
+                if (r_pkg == null)
+                    return;
+
+                await _sendWriter.WritePackageAsync(_writeLock, r_pkg, _cancellationTokenSource.Token);
+            }
         }
 
         RpcPackage? IRpcServer<T>.ProcessInvocation(RpcRequest request)
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ServerProcessRequest(request, methodsNameCache, methodsSignatureCache, Implementation);
+                RpcUtils.ServerProcessRequest(request, _methodsNameCache, _methodsSignatureCache, Implementation);
         }
 
         Task<RpcPackage?> IRpcServer<T>.ProcessInvocationAsync(RpcRequest request)
         {
             EnsureNotDisposed();
             return
-                RpcUtils.ServerProcessRequestAsync(request, methodsNameCache, methodsSignatureCache, Implementation);
+                RpcUtils.ServerProcessRequestAsync(request, _methodsNameCache, _methodsSignatureCache, Implementation);
         }
 
         void EnsureNotDisposed()

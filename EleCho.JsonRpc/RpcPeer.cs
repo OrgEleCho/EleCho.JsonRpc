@@ -37,6 +37,9 @@ namespace EleCho.JsonRpc
 
         public TAction Remote { get; }
         public TImpl Implementation { get; }
+
+        public bool AllowConcurrentInvoking { get; set; } = true;
+        public bool AllowParallelInvoking { get; set; } = false;
         public bool DisposeBaseStream { get; set; } = false;
 
         public RpcPeer(Stream anotherClient, TImpl implInstance) : this(anotherClient, anotherClient, implInstance) { }
@@ -72,12 +75,12 @@ namespace EleCho.JsonRpc
 
                     if (pkg is RpcRequest req)
                     {
-                        RpcPackage? responsePackage = await RpcUtils.ServerProcessRequestAsync(req, _serverMethodsNameCache, _serverMethodsSignatureCache, Implementation, _cancellationTokenSource.Token);
+                        var processAndRespondTask = AllowParallelInvoking ?
+                            Task.Run(() => ProcessRequestAndRespondAsync(req)):
+                            ProcessRequestAndRespondAsync(req);
 
-                        if (responsePackage == null)
-                            continue;
-
-                        await _sendWriter.WritePackageAsync(_writeLock, responsePackage, _cancellationTokenSource.Token);
+                        if (!AllowConcurrentInvoking)
+                            await processAndRespondTask;
                     }
                     else if (pkg is RpcResponse resp)
                     {
@@ -112,6 +115,16 @@ namespace EleCho.JsonRpc
                 {
 
                 }
+            }
+
+            async Task ProcessRequestAndRespondAsync(RpcRequest requestPackage)
+            {
+                RpcPackage? r_pkg = await RpcUtils.ServerProcessRequestAsync(requestPackage, _serverMethodsNameCache, _serverMethodsSignatureCache, Implementation, _cancellationTokenSource.Token);
+
+                if (r_pkg == null)
+                    return;
+
+                await _sendWriter.WritePackageAsync(_writeLock, r_pkg, _cancellationTokenSource.Token);
             }
         }
 
