@@ -205,7 +205,7 @@ namespace EleCho.JsonRpc.Utils
             ParameterInfo[] paramInfos = methodStorage.ParamInfos;
 
             // send the request
-            sendWriter.WritePackage(writeLock,
+            await sendWriter.WritePackageAsync(writeLock,
                 new RpcRequest(targetMethod.Name, args, methodStorage.Signature, id));
 
             // recv the response
@@ -518,6 +518,15 @@ namespace EleCho.JsonRpc.Utils
                 // 返回
                 return new RpcResponse(ret, refArgs, request.Id.Value);
             }
+            catch (TargetParameterCountException ex)
+            {
+                if (request.Id == null)
+                    return null;
+
+                return new RpcErrorResponse(
+                    new RpcError(RpcErrorCode.InvalidParams, ex.Message, ex.Data),
+                    request.Id.Value);
+            }
             catch (TargetInvocationException ex)
             {
                 if (request.Id == null)
@@ -548,14 +557,6 @@ namespace EleCho.JsonRpc.Utils
                     new RpcError(RpcErrorCode.ServerErrorUpBound, ex.Message, ex.Data),
                     request.Id.Value);
             }
-        }
-
-        public static void ServerHandleRequest<T>(RpcRequest request, StreamWriter sendWriter,
-            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsNameCache,
-            Dictionary<string, (MethodInfo Method, ParameterInfo[] ParamInfos)> methodsSignatureCache, T instance)
-            where T : class
-        {
-
         }
 
 
@@ -617,7 +618,7 @@ namespace EleCho.JsonRpc.Utils
         }
 
         public static async Task<bool> WritePackageAsync(
-            this StreamWriter writer, 
+            this StreamWriter writer,
             SemaphoreSlim writeLock,
             RpcPackage package,
             CancellationToken cancellationToken = default)
@@ -646,31 +647,9 @@ namespace EleCho.JsonRpc.Utils
             }
         }
 
-        public static RpcPackage? ReadPackage(this StreamReader reader, SemaphoreSlim readLock)
-        {
-            try
-            {
-                readLock.Wait();
-                string? json = reader.ReadLine();
-
-                if (json == null)
-                    return null;
-
-                return JsonSerializer.Deserialize<RpcPackage>(json, JsonUtils.Options);
-            }
-            catch (IOException)
-            {
-                return null;
-            }
-            finally
-            {
-                readLock.Release();
-            }
-        }
-
         public static async Task<RpcPackage?> ReadPackageAsync(
-            this StreamReader reader, 
-            SemaphoreSlim readLock, 
+            this StreamReader reader,
+            SemaphoreSlim readLock,
             CancellationToken cancellationToken = default)
         {
             try
