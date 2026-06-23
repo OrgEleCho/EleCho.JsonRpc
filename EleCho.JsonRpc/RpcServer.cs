@@ -1,7 +1,6 @@
 ﻿using EleCho.JsonRpc.Utils;
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
