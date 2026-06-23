@@ -1,8 +1,6 @@
-﻿
-using System.IO;
+﻿using StreamJsonRpc;
 using System.Net;
 using System.Net.Sockets;
-using StreamJsonRpc;
 
 Console.Write("Addr: ");
 var addr = Console.ReadLine();                          // 用户输入地址

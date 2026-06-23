@@ -1,12 +1,47 @@
-﻿using System;
+﻿using EleCho.JsonRpc.Utils;
+using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+
+<<<<<<< TODO: 项目“EleCho.JsonRpc (net8.0)”的未合并的更改, 在此之前:
+<<<<<<< TODO: 项目“EleCho.JsonRpc (net8.0)”的未合并的更改, 在此之前:
+<<<<<<< TODO: 项目“EleCho.JsonRpc (net8.0)”的未合并的更改, 在此之前:
+<<<<<<< TODO: 项目“EleCho.JsonRpc (net8.0)”的未合并的更改, 在此之前:
 using System.Text.Json;
-using System.Threading.Tasks;
-using EleCho.JsonRpc.Utils;
+=======
+using System.Text.Json;
+>>>>>>> 晚于
+using System.Text.Json;
+using System.Text.Json;
+=======
+using System.Text.Json;
+using System.Text.Json;
+>>>>>>> 晚于
+using System.Text.Json;
+using System.Text.Json;
 using System.Threading;
+using System.Threading;
+using System.Threading;
+using System.Threading.Tasks;
+
+<<<<<<< TODO: 项目“EleCho.JsonRpc (net8.0)”的未合并的更改, 在此之前:
+<<<<<<< TODO: 项目“EleCho.JsonRpc (net8.0)”的未合并的更改, 在此之前:
+<<<<<<< TODO: 项目“EleCho.JsonRpc (net8.0)”的未合并的更改, 在此之前:
+=======
+using System.Threading.Tasks;
+>>>>>>> 晚于
+using System.Threading;
+=======
+using System.Threading;
+>>>>>>> 晚于
+=======
+using System.Threading;
+>>>>>>> 晚于
+=======
+using System.Threading;
+>>>>>>> 晚于
+using System.Threading.Tasks;
 
 
 #if NET6_0_OR_GREATER
@@ -25,6 +60,31 @@ namespace EleCho.JsonRpc
         /// Instance for invoking remote methods
         /// </summary>
         public T Remote { get; }
+
+        /// <summary>
+        /// Whether main loop is running
+        /// </summary>
+        public bool IsRunning { get; }
+
+        /// <summary>
+        /// Start main loop in background
+        /// </summary>
+        public void Start();
+
+        /// <summary>
+        /// Run main loop asynchronously
+        /// </summary>
+        public Task RunAsync();
+
+        /// <summary>
+        /// Run main loop and wait for it to complete
+        /// </summary>
+        public void Run();
+
+        /// <summary>
+        /// Stop the background main loop started by <see cref="Start"/>
+        /// </summary>
+        public void Stop();
 
         internal object? ProcessInvocation(MethodInfo? targetMethod, object?[]? args);
         internal Task<object?> ProcessInvocationAsync(MethodInfo? targetMethod, object?[]? args);
@@ -45,12 +105,15 @@ namespace EleCho.JsonRpc
         private readonly SemaphoreSlim _writeLock = new(1, 1);
         private readonly SemaphoreSlim _readLock = new(1, 1);
         private readonly CancellationTokenSource _cancellationTokenSource = new();
+        private readonly object _mainLoopLock = new();
 
         private readonly ConcurrentDictionary<MethodInfo, (string Signature, ParameterInfo[] ParamInfos)> _methodsCache = new();
         private readonly ConcurrentDictionary<object, RpcPackage> _rpcResponseDict = new();
 
 
         private bool _disposed = false;
+        private Task? _mainLoopTask;
+        private CancellationTokenSource? _mainLoopCancellationTokenSource;
 
 
         /// <summary>
@@ -62,6 +125,20 @@ namespace EleCho.JsonRpc
         /// Whether dispose base streams while disposing current object
         /// </summary>
         public bool DisposeBaseStream { get; set; } = false;
+
+        /// <summary>
+        /// Whether main loop is running
+        /// </summary>
+        public bool IsRunning
+        {
+            get
+            {
+                lock (_mainLoopLock)
+                {
+                    return _mainLoopTask != null && !_mainLoopTask.IsCompleted;
+                }
+            }
+        }
 
         /// <summary>
         /// Construct a new JSON RPC Client
@@ -92,21 +169,114 @@ namespace EleCho.JsonRpc
             _recvReader = new StreamReader(recv);
 
             Remote = RpcUtils.CreateDynamicProxy(this);
-            Task.Run(MainLoop);
         }
 
-        private async Task MainLoop()
+        /// <summary>
+        /// Start main loop in background
+        /// </summary>
+        public void Start()
+        {
+            CancellationTokenSource mainLoopCancellationTokenSource = PrepareMainLoop();
+            Task mainLoopTask = Task.Run(() => MainLoop(mainLoopCancellationTokenSource.Token));
+
+            lock (_mainLoopLock)
+            {
+                _mainLoopTask = mainLoopTask;
+            }
+
+            _ = mainLoopTask.ContinueWith(
+                _ => FinishMainLoop(mainLoopCancellationTokenSource),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+
+        /// <summary>
+        /// Run main loop asynchronously
+        /// </summary>
+        public async Task RunAsync()
+        {
+            CancellationTokenSource mainLoopCancellationTokenSource = PrepareMainLoop();
+            Task mainLoopTask = MainLoop(mainLoopCancellationTokenSource.Token);
+
+            lock (_mainLoopLock)
+            {
+                _mainLoopTask = mainLoopTask;
+            }
+
+            try
+            {
+                await mainLoopTask;
+            }
+            finally
+            {
+                FinishMainLoop(mainLoopCancellationTokenSource);
+            }
+        }
+
+        /// <summary>
+        /// Run main loop and wait for it to complete
+        /// </summary>
+        public void Run()
+        {
+            RunAsync().Wait();
+        }
+
+        /// <summary>
+        /// Stop the background main loop started by <see cref="Start"/>
+        /// </summary>
+        public void Stop()
+        {
+            CancellationTokenSource? mainLoopCancellationTokenSource;
+            lock (_mainLoopLock)
+            {
+                mainLoopCancellationTokenSource = _mainLoopCancellationTokenSource;
+            }
+
+            mainLoopCancellationTokenSource?.Cancel();
+        }
+
+        private CancellationTokenSource PrepareMainLoop()
+        {
+            lock (_mainLoopLock)
+            {
+                EnsureNotDisposed();
+
+                if (_mainLoopTask != null && !_mainLoopTask.IsCompleted)
+                    throw new InvalidOperationException("The RpcClient is already running.");
+
+                _mainLoopCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token);
+                _mainLoopTask = new TaskCompletionSource<object?>().Task;
+                return _mainLoopCancellationTokenSource;
+            }
+        }
+
+        private void FinishMainLoop(CancellationTokenSource mainLoopCancellationTokenSource)
+        {
+            lock (_mainLoopLock)
+            {
+                if (ReferenceEquals(_mainLoopCancellationTokenSource, mainLoopCancellationTokenSource))
+                {
+                    _mainLoopTask = null;
+                    _mainLoopCancellationTokenSource = null;
+                }
+            }
+
+            mainLoopCancellationTokenSource.Dispose();
+        }
+
+        private async Task MainLoop(CancellationToken cancellationToken)
         {
             while (!_disposed)
             {
                 try
                 {
-                    if ((await _recvReader.ReadPackageAsync(_readLock, _cancellationTokenSource.Token)) is not RpcPackage pkg)
+                    if ((await _recvReader.ReadPackageAsync(_readLock, cancellationToken)) is not RpcPackage pkg)
                     {
                         Dispose();
                         return;
                     }
-                    
+
                     if (pkg is RpcResponse resp)
                     {
                         _rpcResponseDict[resp.Id] = resp;
@@ -118,7 +288,7 @@ namespace EleCho.JsonRpc
                 }
                 catch (OperationCanceledException)
                 {
-                    Dispose();
+                    break;
                 }
                 catch (IOException)
                 {

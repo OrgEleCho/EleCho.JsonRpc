@@ -1,4 +1,4 @@
-# EleCho.JsonRpc [![](https://img.shields.io/badge/-ÖÐÎÄ-green)](README.md) [![](https://img.shields.io/badge/-English-green)](README.en.md)
+# EleCho.JsonRpc [![](https://img.shields.io/badge/-ï¿½ï¿½ï¿½ï¿½-green)](README.md) [![](https://img.shields.io/badge/-English-green)](README.en.md)
 
 Simple JSON based RPC library.
 
@@ -62,7 +62,9 @@ Console.WriteLine($"Listening {port}");
 while (true)
 {
     TcpClient client = await listener.AcceptTcpClientAsync();                     // Accept a client
-    rpcs.Add(new RpcServer<Commands>(client.GetStream(), serverCommands));        // Create and save an RPC instance
+    var rpc = new RpcServer<Commands>(client.GetStream(), serverCommands);        // Create an RPC instance
+    rpc.Start();
+    rpcs.Add(rpc);                                                               // Save the RPC instance
 }
 ```
 
@@ -77,6 +79,7 @@ client.Connect(IPEndPoint.Parse(addr));                 // Connect to server
 
 RpcClient<Commands> rpc =
     new RpcClient<Commands>(client.GetStream());        // Create an RPC client instance
+rpc.Start();
 
 int num = 10;
 rpc.Remote.Add114514(ref num);

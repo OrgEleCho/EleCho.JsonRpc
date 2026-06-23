@@ -1,8 +1,7 @@
-﻿using System;
+﻿using EleCho.JsonRpc;
+using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
-using EleCho.JsonRpc;
 using TestCommon;
 
 Console.Write("Addr: ");
@@ -16,6 +15,7 @@ client.Connect(ParseIPEndPoint(addr));                   // 连接到服务器
 
 RpcClient<ICommands> rpc =
     new RpcClient<ICommands>(client.GetStream());        // 创建 RPC 客户端实例
+rpc.Start();
 
 int num = 10;
 rpc.Remote.Add114514(ref num);

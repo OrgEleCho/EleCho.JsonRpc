@@ -1,6 +1,6 @@
-﻿using System.Net.Sockets;
+﻿using StreamJsonRpc;
 using System.Net;
-using StreamJsonRpc;
+using System.Net.Sockets;
 
 int port = 11451;
 

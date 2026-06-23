@@ -1,8 +1,6 @@
-﻿using System;
+﻿using EleCho.JsonRpc;
 using System.Net;
 using System.Net.Sockets;
-using System.Collections.Generic;
-using EleCho.JsonRpc;
 using TestCommon;
 
 int port = 11451;
@@ -20,7 +18,9 @@ _ = Task.Run(async () =>
     while (true)
     {
         TcpClient client = await listener.AcceptTcpClientAsync();                     // 接受一个客户端
-        rpcs.Add(new RpcPeer<ICommands, CommandsImpl>(client.GetStream(), serverCommands));        // 创建并保存 RPC 实例
+        var rpc = new RpcPeer<ICommands, CommandsImpl>(client.GetStream(), serverCommands);        // 创建并保存 RPC 实例
+        rpc.Start();
+        rpcs.Add(rpc);
     }
 });
 
@@ -32,7 +32,7 @@ while (true)
         if (input == null)
             break;
 
-        foreach(var rpc in rpcs)
+        foreach (var rpc in rpcs)
             rpc.Remote.WriteLine(input);                        // 调用服务端 WriteLine 方法
     }
 }

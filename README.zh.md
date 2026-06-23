@@ -62,7 +62,9 @@ Console.WriteLine($"Listening {port}");
 while (true)
 {
     TcpClient client = await listener.AcceptTcpClientAsync();                     // 接受一个客户端
-    rpcs.Add(new RpcServer<Commands>(client.GetStream(), serverCommands));        // 创建并保存 RPC 实例
+    var rpc = new RpcServer<Commands>(client.GetStream(), serverCommands);        // 创建 RPC 实例
+    rpc.Start();
+    rpcs.Add(rpc);                                                               // 保存 RPC 实例
 }
 ```
 
@@ -77,6 +79,7 @@ client.Connect(IPEndPoint.Parse(addr));                 // 连接到服务器
 
 RpcClient<Commands> rpc =
     new RpcClient<Commands>(client.GetStream());        // 创建 RPC 客户端实例
+rpc.Start();
 
 int num = 10;
 rpc.Remote.Add114514(ref num);

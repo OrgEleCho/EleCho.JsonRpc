@@ -1,11 +1,11 @@
-﻿using System;
+﻿using EleCho.JsonRpc;
+using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Collections.Generic;
-using EleCho.JsonRpc;
-using TestCommon;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using TestCommon;
 
 int port = 11451;
 
@@ -24,6 +24,7 @@ while (true)
     Console.WriteLine($"Client connected: {client.Client.RemoteEndPoint}");
     var rpcServer = new RpcServer<ICommands>(client.GetStream(), serverCommands); // 创建新的 RPC 服务端实例
     rpcServer.AllowParallelInvoking = true;                                       // 允许并行调用
+    rpcServer.Start();
 
     rpcs.Add(rpcServer);
 }
